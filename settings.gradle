@@ -1,3 +1,4 @@
 rootProject.name = 'samnammae-BE'
 
 include 'api-gateway'
+include 'config-server'
