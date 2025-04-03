@@ -3,3 +3,5 @@ rootProject.name = 'samnammae-BE'
 include 'api-gateway'
 include 'config-server'
 include 'eureka-server'
+
+include 'auth-service'
