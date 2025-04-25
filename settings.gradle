@@ -1,4 +1,4 @@
-rootProject.name = 'samnammae-BE'
+rootProject.name = 'IncluKiosk-BE'
 
 include 'api-gateway'
 include 'config-server'
