@@ -3,6 +3,8 @@ package com.samnammae.auth_service.service;
 import com.samnammae.auth_service.domain.User;
 import com.samnammae.auth_service.domain.UserRepository;
 import com.samnammae.auth_service.dto.request.SignUpRequest;
+import com.samnammae.common.exception.CustomException;
+import com.samnammae.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,7 +20,7 @@ public class AuthService {
     public void signup(SignUpRequest request) {
         // 이메일 중복 체크
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
         }
 
         // 비밀번호 암호화
