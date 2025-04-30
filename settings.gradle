@@ -4,4 +4,6 @@ include 'api-gateway'
 include 'config-server'
 include 'eureka-server'
 
+include 'common-module'
+
 include 'auth-service'
