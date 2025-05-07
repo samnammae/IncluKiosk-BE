@@ -8,6 +8,11 @@ springdoc:
     csrf:
       enabled: false  # 스웨거 UI 테스트시 csrf 끄기
 
+jwt:
+  secret: ${JWT_SECRET} # 최소 256비트 (32바이트)
+  access-token-validity: 900000     # 15분 (단위: ms)
+  refresh-token-validity: 604800000 # 7일 (단위: ms)
+
 spring:
   config:
     import: optional:classpath:application-secret.yml

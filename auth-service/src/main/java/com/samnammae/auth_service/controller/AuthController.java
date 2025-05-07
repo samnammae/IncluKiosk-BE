@@ -1,6 +1,8 @@
 package com.samnammae.auth_service.controller;
 
+import com.samnammae.auth_service.dto.request.LoginRequest;
 import com.samnammae.auth_service.dto.request.SignUpRequest;
+import com.samnammae.auth_service.dto.response.LoginResponse;
 import com.samnammae.auth_service.service.AuthService;
 import com.samnammae.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,5 +27,12 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> signup(@RequestBody SignUpRequest request) {
         authService.signup(request);
         return ResponseEntity.ok(ApiResponse.success());
+    }
+
+    @PostMapping("/login")
+    @Operation(summary = "로그인", description = "이메일과 비밀번호를 입력해 로그인하고 JWT 토큰을 발급")
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
+        LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

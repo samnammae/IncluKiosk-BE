@@ -1,7 +1,7 @@
 package com.samnammae.auth_service.service;
 
-import com.samnammae.auth_service.domain.User;
-import com.samnammae.auth_service.domain.UserRepository;
+import com.samnammae.auth_service.domain.user.User;
+import com.samnammae.auth_service.domain.user.UserRepository;
 import com.samnammae.auth_service.dto.request.SignUpRequest;
 import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;

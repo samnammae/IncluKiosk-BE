@@ -1,5 +1,7 @@
 package com.samnammae.auth_service.domain;
 
+import com.samnammae.auth_service.domain.user.User;
+import com.samnammae.auth_service.domain.user.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
