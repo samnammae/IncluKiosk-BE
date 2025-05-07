@@ -1,4 +1,4 @@
-package com.samnammae.auth_service.domain;
+package com.samnammae.auth_service.domain.user;
 
 import jakarta.persistence.*;
 import lombok.*;
