@@ -1,4 +1,4 @@
-package com.samnammae.auth_service.domain;
+package com.samnammae.auth_service.domain.user;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

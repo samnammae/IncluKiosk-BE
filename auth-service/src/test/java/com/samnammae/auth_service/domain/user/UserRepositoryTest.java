@@ -1,4 +1,4 @@
-package com.samnammae.auth_service.domain;
+package com.samnammae.auth_service.domain.user;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
