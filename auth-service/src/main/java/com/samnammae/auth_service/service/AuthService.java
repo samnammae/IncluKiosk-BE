@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -71,17 +72,20 @@ public class AuthService {
         String refreshToken = jwtUtil.generateRefreshToken(user, issuedAt, expiresAtDate);
 
         // 기존 토큰 있으면 업데이트, 없으면 새로 저장
-        refreshTokenRepository.findByUserId(user.getId())
-                .ifPresentOrElse(
-                        token -> token.updateToken(refreshToken, expiresAtLocal),
-                        () -> refreshTokenRepository.save(
-                                RefreshToken.builder()
-                                        .userId(user.getId())
-                                        .token(refreshToken)
-                                        .expiresAt(expiresAtLocal)
-                                        .createdAt(LocalDateTime.now())
-                                        .build())
-                );
+        Optional<RefreshToken> existingToken = refreshTokenRepository.findByUserIdAndToken(user.getId(), refreshToken);
+
+        if (existingToken.isPresent()) {
+            existingToken.get().updateToken(refreshToken, expiresAtLocal);
+        } else {
+            refreshTokenRepository.save(
+                    RefreshToken.builder()
+                            .userId(user.getId())
+                            .token(refreshToken)
+                            .expiresAt(expiresAtLocal)
+                            .createdAt(LocalDateTime.now())
+                            .build()
+            );
+        }
 
         return new LoginResponse(accessToken, refreshToken);
     }

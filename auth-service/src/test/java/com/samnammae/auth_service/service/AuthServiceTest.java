@@ -98,7 +98,7 @@ class AuthServiceTest {
         given(jwtUtil.getRefreshTokenValidityInMs()).willReturn(refreshValidityMs);
         given(jwtUtil.generateAccessToken(eq(user), any(Date.class), any(Date.class))).willReturn(accessToken);
         given(jwtUtil.generateRefreshToken(eq(user), any(Date.class), any(Date.class))).willReturn(refreshToken);
-        given(refreshTokenRepository.findByUserId(user.getId())).willReturn(Optional.empty());
+        given(refreshTokenRepository.findByUserIdAndToken(user.getId(), refreshToken)).willReturn(Optional.empty());
 
         // when
         LoginResponse response = authService.login(request);
@@ -141,7 +141,7 @@ class AuthServiceTest {
         given(jwtUtil.getRefreshTokenValidityInMs()).willReturn(refreshValidityMs);
         given(jwtUtil.generateAccessToken(eq(user), any(Date.class), any(Date.class))).willReturn(accessToken);
         given(jwtUtil.generateRefreshToken(eq(user), any(Date.class), any(Date.class))).willReturn(refreshToken);
-        given(refreshTokenRepository.findByUserId(user.getId())).willReturn(Optional.of(existingToken));
+        given(refreshTokenRepository.findByUserIdAndToken(user.getId(), refreshToken)).willReturn(Optional.of(existingToken));
 
         // when
         LoginResponse response = authService.login(request);
