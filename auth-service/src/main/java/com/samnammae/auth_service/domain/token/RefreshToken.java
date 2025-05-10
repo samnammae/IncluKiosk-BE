@@ -17,7 +17,7 @@ public class RefreshToken {
     private Long id;
 
     // 유저의 PK (User 엔터티의 id)
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private Long userId;
 
     @Column(nullable = false, unique = true)
