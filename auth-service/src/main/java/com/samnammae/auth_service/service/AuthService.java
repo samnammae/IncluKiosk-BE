@@ -10,9 +10,11 @@ import com.samnammae.auth_service.dto.response.LoginResponse;
 import com.samnammae.auth_service.jwt.JwtUtil;
 import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -89,4 +91,21 @@ public class AuthService {
 
         return new LoginResponse(accessToken, refreshToken);
     }
+
+    // 로그아웃
+    @Transactional
+    public void logout(String refreshToken) {
+        // 유효성 검증
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
+
+        // 토큰에서 userId 추출
+        Claims claims = jwtUtil.getClaims(refreshToken);
+        Long userId = Long.valueOf(claims.get("sub").toString());
+
+        // DB에서 해당 토큰만 삭제
+        refreshTokenRepository.deleteByUserIdAndToken(userId, refreshToken);
+    }
+
 }

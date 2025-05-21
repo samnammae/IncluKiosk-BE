@@ -4,15 +4,14 @@ import com.samnammae.auth_service.dto.request.LoginRequest;
 import com.samnammae.auth_service.dto.request.SignUpRequest;
 import com.samnammae.auth_service.dto.response.LoginResponse;
 import com.samnammae.auth_service.service.AuthService;
+import com.samnammae.common.exception.CustomException;
+import com.samnammae.common.exception.ErrorCode;
 import com.samnammae.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -35,4 +34,24 @@ public class AuthController {
         LoginResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
+
+    @PostMapping("/logout")
+    @Operation(summary = "로그아웃", description = "Refresh Token을 기반으로 로그아웃 처리 (서버에서 토큰 삭제)")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        // 헤더가 없거나 형식이 잘못된 경우 예외 처리
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("authHeader: " + authHeader);
+
+            throw new CustomException(ErrorCode.TOKEN_MISSING);
+        }
+
+        // 실제 토큰만 추출
+        String refreshToken = authHeader.replace("Bearer ", "").trim();
+
+        authService.logout(refreshToken);
+        return ResponseEntity.ok(ApiResponse.success());
+    }
+
 }

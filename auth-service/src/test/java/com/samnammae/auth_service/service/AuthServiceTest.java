@@ -10,6 +10,7 @@ import com.samnammae.auth_service.dto.response.LoginResponse;
 import com.samnammae.auth_service.jwt.JwtUtil;
 import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
+import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -125,13 +126,13 @@ class AuthServiceTest {
 
         long refreshValidityMs = 600000L;
         String accessToken = "access-token";
-        String refreshToken = "new-refresh-token";
+        String refreshToken = "existing-refresh-token";
 
         // 기존 리프레시 토큰 객체 (spy로 감시)
         RefreshToken existingToken = spy(RefreshToken.builder()
                 .id(99L)
                 .userId(user.getId())
-                .token("old-token")
+                .token(refreshToken)
                 .expiresAt(LocalDateTime.now().minusDays(1))
                 .createdAt(LocalDateTime.now().minusDays(2))
                 .build());
@@ -198,6 +199,44 @@ class AuthServiceTest {
                     CustomException ce = (CustomException) e;
                     assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.INVALID_PASSWORD);
                 });
+    }
+
+    @Test
+    @DisplayName("로그아웃 성공 테스트 - 유효한 Refresh Token 삭제")
+    void logoutSuccess() {
+        // given
+        String refreshToken = "valid-refresh-token";
+        Long userId = 1L;
+
+        Claims claims = mock(Claims.class);
+        given(jwtUtil.validateToken(refreshToken)).willReturn(true);
+        given(jwtUtil.getClaims(refreshToken)).willReturn(claims);
+        given(claims.get("sub")).willReturn(String.valueOf(userId));
+
+        // when
+        authService.logout(refreshToken);
+
+        // then
+        then(refreshTokenRepository).should().deleteByUserIdAndToken(userId, refreshToken);
+    }
+
+    @Test
+    @DisplayName("로그아웃 실패 테스트 - 유효하지 않은 토큰")
+    void logoutFailInvalidToken() {
+        // given
+        String invalidToken = "invalid-refresh-token";
+        given(jwtUtil.validateToken(invalidToken)).willReturn(false);
+
+        // when and then
+        assertThatThrownBy(() -> authService.logout(invalidToken))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> {
+                    CustomException ce = (CustomException) e;
+                    assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.INVALID_TOKEN);
+                });
+
+        // 삭제가 시도되지 않았는지 확인
+        then(refreshTokenRepository).shouldHaveNoInteractions();
     }
 
 }
