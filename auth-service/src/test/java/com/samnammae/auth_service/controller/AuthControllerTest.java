@@ -110,4 +110,43 @@ class AuthControllerTest {
                 .andExpect(status().is4xxClientError());
     }
 
+    @Test
+    @DisplayName("로그아웃 API 성공 테스트")
+    void logoutSuccess() throws Exception {
+        // given
+        String refreshToken = "valid-refresh-token";
+        String authHeader = "Bearer " + refreshToken;
+
+        doNothing().when(authService).logout(refreshToken);
+
+        // when and then
+        mockMvc.perform(post("/api/auth/logout")
+                        .header("Authorization", authHeader))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("로그아웃 API 실패 테스트 - Authorization 헤더 없음")
+    void logoutMissingHeader() throws Exception {
+        // when and then
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().is4xxClientError());  // 400 or 401 예상
+    }
+
+    @Test
+    @DisplayName("로그아웃 API 실패 테스트 - 유효하지 않은 토큰")
+    void logoutInvalidToken() throws Exception {
+        // given
+        String refreshToken = "invalid-refresh-token";
+        String authHeader = "Bearer " + refreshToken;
+
+        doThrow(new CustomException(ErrorCode.INVALID_TOKEN))
+                .when(authService).logout(refreshToken);
+
+        // when and then
+        mockMvc.perform(post("/api/auth/logout")
+                        .header("Authorization", authHeader))
+                .andExpect(status().is4xxClientError());  // 401 Unauthorized 등
+    }
+
 }
