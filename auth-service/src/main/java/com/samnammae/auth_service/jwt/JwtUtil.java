@@ -1,7 +1,9 @@
 package com.samnammae.auth_service.jwt;
 
 import com.samnammae.auth_service.domain.user.User;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Header;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
@@ -33,10 +35,10 @@ public class JwtUtil {
     public String generateAccessToken(User user, Date issuedAt, Date expiresAt) {
         return Jwts.builder()
                 .setHeaderParam(Header.TYPE, Header.JWT_TYPE)
-                .subject(user.getEmail())
-                .claim("userId", user.getId())
-                .issuedAt(issuedAt)
-                .expiration(expiresAt)
+                .setSubject(String.valueOf(user.getId()))
+                .claim("userEmail", user.getEmail())
+                .setIssuedAt(issuedAt)
+                .setExpiration(expiresAt)
                 .signWith(secretKey)
                 .compact();
     }
@@ -45,11 +47,34 @@ public class JwtUtil {
     public String generateRefreshToken(User user, Date issuedAt, Date expiresAt) {
         return Jwts.builder()
                 .setHeaderParam(Header.TYPE, Header.JWT_TYPE)
-                .subject(user.getEmail())
-                .issuedAt(issuedAt)
-                .expiration(expiresAt)
+                .setSubject(String.valueOf(user.getId()))
+                .setIssuedAt(issuedAt)
+                .setExpiration(expiresAt)
                 .signWith(secretKey)
                 .compact();
+    }
+
+    // 토큰 유효성 검증
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            // 로그 찍거나 예외 처리 로직 추가 가능
+            return false;
+        }
+    }
+
+    // 클레임 추출
+    public Claims getClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
 }
