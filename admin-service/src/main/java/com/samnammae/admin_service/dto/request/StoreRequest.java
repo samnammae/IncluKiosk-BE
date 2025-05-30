@@ -1,5 +1,6 @@
 package com.samnammae.admin_service.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,8 +19,11 @@ public class StoreRequest {
     private String address;
     private String introduction;
 
+    @Schema(type = "string", format = "binary")
     private MultipartFile mainImg;
+    @Schema(type = "string", format = "binary")
     private MultipartFile logoImg;
+    @Schema(type = "string", format = "binary")
     private MultipartFile startBackground;
 
     private String mainColor;
