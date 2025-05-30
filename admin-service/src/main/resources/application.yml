@@ -9,7 +9,7 @@ springdoc:
       enabled: false  # 스웨거 UI 테스트시 csrf 끄기
 
 file:
-  upload-dir: ./uploads
+  upload-dir: ${user.dir}/uploads
 
 spring:
   config:
