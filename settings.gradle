@@ -1,9 +1,7 @@
 rootProject.name = 'IncluKiosk-BE'
 
-include 'api-gateway'
-include 'config-server'
-include 'eureka-server'
+include('api-gateway', 'config-server', 'eureka-server')
 
 include 'common-module'
 
-include 'auth-service'
+include('auth-service', 'admin-service')
