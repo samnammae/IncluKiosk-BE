@@ -38,6 +38,18 @@ class StoreControllerTest {
     @DisplayName("매장 등록 성공 테스트")
     void registerStore_success() throws Exception {
         // given
+        StoreRequest storeRequest = StoreRequest.builder()
+                .name("테스트매장")
+                .phone("010-1234-5678")
+                .address("서울시 어딘가")
+                .introduction("테스트 소개")
+                .mainColor("#002F6C")
+                .subColor("#0051A3")
+                .textColor("#F8F9FA")
+                .build();
+        byte[] jsonBytes = objectMapper.writeValueAsBytes(storeRequest);
+
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", jsonBytes);
         MockMultipartFile mainImg = new MockMultipartFile("mainImg", "main.jpg", "image/jpeg", "image-content".getBytes());
         MockMultipartFile logoImg = new MockMultipartFile("logoImg", "logo.jpg", "image/jpeg", "image-content".getBytes());
         MockMultipartFile background = new MockMultipartFile("startBackground", "bg.jpg", "image/jpeg", "image-content".getBytes());
@@ -46,16 +58,10 @@ class StoreControllerTest {
 
         // when and then
         mockMvc.perform(multipart("/api/admin/store")
+                        .file(requestPart)
                         .file(mainImg)
                         .file(logoImg)
                         .file(background)
-                        .param("name", "테스트매장")
-                        .param("phone", "010-1234-5678")
-                        .param("address", "서울시 어딘가")
-                        .param("introduction", "테스트 소개")
-                        .param("mainColor", "#002F6C")
-                        .param("subColor", "#0051A3")
-                        .param("textColor", "#F8F9FA")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -66,6 +72,17 @@ class StoreControllerTest {
     @DisplayName("매장 등록 실패 테스트 - 파일 업로드 실패 예외 발생")
     void registerStore_fail_dueToFileUploadError() throws Exception {
         // given
+        StoreRequest storeRequest = StoreRequest.builder()
+                .name("테스트매장")
+                .phone("010-1234-5678")
+                .address("서울시 어딘가")
+                .mainColor("#002F6C")
+                .subColor("#0051A3")
+                .textColor("#F8F9FA")
+                .build();
+        byte[] jsonBytes = objectMapper.writeValueAsBytes(storeRequest);
+
+        MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", jsonBytes);
         MockMultipartFile mainImg = new MockMultipartFile("mainImg", "main.jpg", "image/jpeg", "image-content".getBytes());
 
         Mockito.when(storeService.createStore(any(StoreRequest.class)))
@@ -73,13 +90,8 @@ class StoreControllerTest {
 
         // when and then
         mockMvc.perform(multipart("/api/admin/store")
+                        .file(requestPart)
                         .file(mainImg)
-                        .param("name", "테스트매장")
-                        .param("phone", "010-1234-5678")
-                        .param("address", "서울시 어딘가")
-                        .param("mainColor", "#002F6C")
-                        .param("subColor", "#0051A3")
-                        .param("textColor", "#F8F9FA")
                         .contentType(MediaType.MULTIPART_FORM_DATA))
                 .andExpect(status().is5xxServerError())
                 .andExpect(jsonPath("$.success").value(false))
