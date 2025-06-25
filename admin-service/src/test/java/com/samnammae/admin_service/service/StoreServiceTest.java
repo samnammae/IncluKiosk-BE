@@ -13,6 +13,8 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.mock.web.MockMultipartFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,6 +24,7 @@ import static org.mockito.BDDMockito.*;
 @ExtendWith(MockitoExtension.class)
 class StoreServiceTest {
 
+    private static final Logger log = LoggerFactory.getLogger(StoreServiceTest.class);
     @InjectMocks
     private StoreService storeService;
 
@@ -38,6 +41,7 @@ class StoreServiceTest {
     @DisplayName("매장 등록 성공 테스트")
     void createStore_success() {
         // given
+        Long ownerId = 1L; // 가게 소유자 ID
         StoreRequest request = createStoreRequest();
         String expectedFileUrl = "stored-file.jpg";
 
@@ -48,7 +52,7 @@ class StoreServiceTest {
         given(storeRepository.save(any())).willReturn(savedStore);
 
         // when
-        Long storeId = storeService.createStore(request);
+        Long storeId = storeService.createStore(ownerId, request);
 
         // then
         assertThat(storeId).isEqualTo(1L);
@@ -60,6 +64,7 @@ class StoreServiceTest {
         verify(storeRepository).save(storeCaptor.capture());
         Store capturedStore = storeCaptor.getValue();
 
+        assertThat(capturedStore.getOwnerId()).isEqualTo(ownerId);
         assertThat(capturedStore.getName()).isEqualTo(request.getName());
         assertThat(capturedStore.getPhone()).isEqualTo(request.getPhone());
         assertThat(capturedStore.getAddress()).isEqualTo(request.getAddress());
@@ -76,12 +81,13 @@ class StoreServiceTest {
     @DisplayName("파일 업로드 중 예외 발생 시 FILE_UPLOAD_FAILED 예외 발생")
     void createStore_uploadFail() {
         // given
+        Long ownerId = 1L; // 가게 소유자 ID
         StoreRequest request = createStoreRequest();
 
         given(fileStorageService.upload(any())).willThrow(new RuntimeException("업로드 실패"));
 
         // when and then
-        assertThatThrownBy(() -> storeService.createStore(request))
+        assertThatThrownBy(() -> storeService.createStore(ownerId, request))
                 .isInstanceOf(CustomException.class)
                 .satisfies(e -> {
                     CustomException ce = (CustomException) e;
@@ -96,6 +102,7 @@ class StoreServiceTest {
     @DisplayName("이미지 파일이 없을 경우에도 매장 등록 성공")
     void createStore_withoutImages_success() {
         // given
+        Long ownerId = 1L; // 가게 소유자 ID
         StoreRequest request = createStoreRequestWithoutImages();
 
         Store savedStore = mock(Store.class);
@@ -103,7 +110,7 @@ class StoreServiceTest {
         given(storeRepository.save(any())).willReturn(savedStore);
 
         // when
-        Long storeId = storeService.createStore(request);
+        Long storeId = storeService.createStore(ownerId, request);
 
         // then
         assertThat(storeId).isEqualTo(1L);

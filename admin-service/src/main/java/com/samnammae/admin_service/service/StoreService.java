@@ -17,12 +17,13 @@ public class StoreService {
     private final FileStorageService fileStorageService;
 
     // 가게 등록
-    public Long createStore(StoreRequest request) {
+    public Long createStore(Long ownerId, StoreRequest request) {
         String mainImgUrl = uploadFile(request.getMainImg());
         String logoImgUrl = uploadFile(request.getLogoImg());
         String backgroundUrl = uploadFile(request.getStartBackground());
 
         Store store = Store.builder()
+                .ownerId(ownerId)
                 .name(request.getName())
                 .phone(request.getPhone())
                 .address(request.getAddress())

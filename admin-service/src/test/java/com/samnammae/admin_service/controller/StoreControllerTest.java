@@ -17,6 +17,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -38,6 +39,7 @@ class StoreControllerTest {
     @DisplayName("매장 등록 성공 테스트")
     void registerStore_success() throws Exception {
         // given
+        Long userId = 1L; // 가게 소유자 ID
         StoreRequest storeRequest = StoreRequest.builder()
                 .name("테스트매장")
                 .phone("010-1234-5678")
@@ -54,7 +56,7 @@ class StoreControllerTest {
         MockMultipartFile logoImg = new MockMultipartFile("logoImg", "logo.jpg", "image/jpeg", "image-content".getBytes());
         MockMultipartFile background = new MockMultipartFile("startBackground", "bg.jpg", "image/jpeg", "image-content".getBytes());
 
-        Mockito.when(storeService.createStore(any(StoreRequest.class))).thenReturn(1L);
+        Mockito.when(storeService.createStore(eq(userId), any(StoreRequest.class))).thenReturn(1L);
 
         // when and then
         mockMvc.perform(multipart("/api/admin/store")
@@ -62,7 +64,8 @@ class StoreControllerTest {
                         .file(mainImg)
                         .file(logoImg)
                         .file(background)
-                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .header("X-User-Id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").value(1));
@@ -72,6 +75,7 @@ class StoreControllerTest {
     @DisplayName("매장 등록 실패 테스트 - 파일 업로드 실패 예외 발생")
     void registerStore_fail_dueToFileUploadError() throws Exception {
         // given
+        Long userId = 1L; // 가게 소유자 ID
         StoreRequest storeRequest = StoreRequest.builder()
                 .name("테스트매장")
                 .phone("010-1234-5678")
@@ -85,14 +89,15 @@ class StoreControllerTest {
         MockMultipartFile requestPart = new MockMultipartFile("request", "", "application/json", jsonBytes);
         MockMultipartFile mainImg = new MockMultipartFile("mainImg", "main.jpg", "image/jpeg", "image-content".getBytes());
 
-        Mockito.when(storeService.createStore(any(StoreRequest.class)))
+        Mockito.when(storeService.createStore(eq(userId), any(StoreRequest.class)))
                 .thenThrow(new CustomException(ErrorCode.FILE_UPLOAD_FAILED));
 
         // when and then
         mockMvc.perform(multipart("/api/admin/store")
                         .file(requestPart)
                         .file(mainImg)
-                        .contentType(MediaType.MULTIPART_FORM_DATA))
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .header("X-User-Id", "1"))
                 .andExpect(status().is5xxServerError())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(500))
