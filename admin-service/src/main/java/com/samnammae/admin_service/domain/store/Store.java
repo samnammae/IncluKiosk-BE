@@ -16,6 +16,9 @@ public class Store {
     private Long id;
 
     @Column(nullable = false)
+    private Long ownerId;   // 매장 소유자 ID (관리자 ID)
+
+    @Column(nullable = false)
     private String name;         // 매장 이름
 
     @Column(nullable = false)
