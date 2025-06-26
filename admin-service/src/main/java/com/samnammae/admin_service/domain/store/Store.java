@@ -2,6 +2,11 @@ package com.samnammae.admin_service.domain.store;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "store")
@@ -9,6 +14,7 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Store {
 
     @Id
@@ -42,4 +48,11 @@ public class Store {
 
     @Column(nullable = false)
     private String textColor;    // 텍스트 컬러 (#F8F9FA 등)
+
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime createdAt; // 생성 시각
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt; // 수정 시각
 }
