@@ -3,6 +3,7 @@ package com.samnammae.admin_service.service;
 import com.samnammae.admin_service.domain.store.Store;
 import com.samnammae.admin_service.domain.store.StoreRepository;
 import com.samnammae.admin_service.dto.request.StoreRequest;
+import com.samnammae.admin_service.dto.response.StoreSimpleResponse;
 import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +17,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mock.web.MockMultipartFile;
+
+import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -126,6 +130,80 @@ class StoreServiceTest {
         assertThat(capturedStore.getMainImgUrl()).isNull();
         assertThat(capturedStore.getLogoImgUrl()).isNull();
         assertThat(capturedStore.getStartBackgroundUrl()).isNull();
+    }
+
+    @Test
+    @DisplayName("매장 목록 조회 성공 테스트")
+    void getStoreList_success() {
+        // given
+        Long userId = 1L;
+        List<Store> storeList = List.of(
+                Store.builder()
+                        .id(1L)
+                        .ownerId(userId)
+                        .name("테스트매장1")
+                        .phone("010-1234-5678")
+                        .address("서울시 어딘가1")
+                        .introduction("소개1")
+                        .mainImgUrl("main1.jpg")
+                        .logoImgUrl("logo1.jpg")
+                        .mainColor("#002F6C")
+                        .build(),
+                Store.builder()
+                        .id(2L)
+                        .ownerId(userId)
+                        .name("테스트매장2")
+                        .phone("010-9876-5432")
+                        .address("서울시 어딘가2")
+                        .introduction("소개2")
+                        .mainImgUrl("main2.jpg")
+                        .logoImgUrl("logo2.jpg")
+                        .mainColor("#FF5733")
+                        .build()
+        );
+
+        given(storeRepository.findAllByOwnerId(userId)).willReturn(storeList);
+
+        // when
+        List<StoreSimpleResponse> result = storeService.getStoreList(userId);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getStoreId()).isEqualTo(1L);
+        assertThat(result.get(0).getName()).isEqualTo("테스트매장1");
+        assertThat(result.get(0).getMainImg()).isEqualTo("main1.jpg");
+
+        assertThat(result.get(1).getStoreId()).isEqualTo(2L);
+        assertThat(result.get(1).getName()).isEqualTo("테스트매장2");
+        assertThat(result.get(1).getMainImg()).isEqualTo("main2.jpg");
+    }
+
+    @Test
+    @DisplayName("매장 목록 조회 - 매장이 없는 경우")
+    void getStoreList_emptyList() {
+        // given
+        Long userId = 1L;
+        given(storeRepository.findAllByOwnerId(userId)).willReturn(Collections.emptyList());
+
+        // when
+        List<StoreSimpleResponse> result = storeService.getStoreList(userId);
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("매장 목록 조회 - 레포지토리 호출 확인")
+    void getStoreList_verifyRepositoryCall() {
+        // given
+        Long userId = 1L;
+        given(storeRepository.findAllByOwnerId(userId)).willReturn(Collections.emptyList());
+
+        // when
+        storeService.getStoreList(userId);
+
+        // then
+        verify(storeRepository).findAllByOwnerId(userId);
     }
 
     // 테스트에 사용할 요청 객체 생성 메소드

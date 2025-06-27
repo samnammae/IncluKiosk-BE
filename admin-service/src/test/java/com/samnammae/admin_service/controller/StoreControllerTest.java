@@ -3,6 +3,7 @@ package com.samnammae.admin_service.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samnammae.admin_service.config.TestConfig;
 import com.samnammae.admin_service.dto.request.StoreRequest;
+import com.samnammae.admin_service.dto.response.StoreSimpleResponse;
 import com.samnammae.admin_service.service.StoreService;
 import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
@@ -16,11 +17,14 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @WebMvcTest(StoreController.class)
 @Import(TestConfig.class)  // 수동 빈 설정 클래스
@@ -102,5 +106,38 @@ class StoreControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(500))
                 .andExpect(jsonPath("$.message").value("파일 업로드에 실패했습니다."));
+    }
+
+    @Test
+    @DisplayName("매장 목록 조회 성공 테스트")
+    void getStoreList_success() throws Exception {
+        // given
+        Long userId = 1L; // 가게 소유자 ID
+        StoreSimpleResponse storeResponse1 = StoreSimpleResponse.builder()
+                .storeId(1L)
+                .name("첫번째매장")
+                .phone("010-1234-5678")
+                .address("서울시 어딘가")
+                .build();
+        StoreSimpleResponse storeResponse2 = StoreSimpleResponse.builder()
+                .storeId(2L)
+                .name("두번째매장")
+                .phone("010-9876-5432")
+                .address("서울시 다른 곳")
+                .build();
+
+        List<StoreSimpleResponse> storeList = List.of(storeResponse1, storeResponse2);
+        Mockito.when(storeService.getStoreList(userId)).thenReturn(storeList);
+
+        // when and then
+        mockMvc.perform(get("/api/admin/store")
+                        .header("X-User-Id", userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0].storeId").value(1L))
+                .andExpect(jsonPath("$.data[0].name").value("첫번째매장"))
+                .andExpect(jsonPath("$.data[1].storeId").value(2L))
+                .andExpect(jsonPath("$.data[1].name").value("두번째매장"));
     }
 }

@@ -3,11 +3,14 @@ package com.samnammae.admin_service.service;
 import com.samnammae.admin_service.domain.store.Store;
 import com.samnammae.admin_service.domain.store.StoreRepository;
 import com.samnammae.admin_service.dto.request.StoreRequest;
+import com.samnammae.admin_service.dto.response.StoreSimpleResponse;
 import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -54,4 +57,11 @@ public class StoreService {
         }
     }
 
+    // 매장 목록 조회
+    public List<StoreSimpleResponse> getStoreList(Long userId) {
+        // Store 객체를 StoreSimpleResponse로 변환
+        return storeRepository.findAllByOwnerId(userId).stream()
+                .map(StoreSimpleResponse::from)
+                .toList();
+    }
 }
