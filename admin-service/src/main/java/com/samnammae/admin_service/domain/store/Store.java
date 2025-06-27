@@ -21,7 +21,7 @@ public class Store {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private Long ownerId;   // 매장 소유자 ID (관리자 ID)
 
     @Column(nullable = false)
