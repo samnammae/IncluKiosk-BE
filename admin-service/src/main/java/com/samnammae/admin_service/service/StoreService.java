@@ -3,6 +3,7 @@ package com.samnammae.admin_service.service;
 import com.samnammae.admin_service.domain.store.Store;
 import com.samnammae.admin_service.domain.store.StoreRepository;
 import com.samnammae.admin_service.dto.request.StoreRequest;
+import com.samnammae.admin_service.dto.response.StoreResponse;
 import com.samnammae.admin_service.dto.response.StoreSimpleResponse;
 import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
@@ -63,5 +64,19 @@ public class StoreService {
         return storeRepository.findAllByOwnerId(userId).stream()
                 .map(StoreSimpleResponse::from)
                 .toList();
+    }
+
+    // 특정 매장 조회
+    public StoreResponse getStore(Long userId, Long storeId) {
+        // 매장 존재 여부 확인
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+
+        // 매장 소유자 확인
+        if (!store.getOwnerId().equals(userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
+        return StoreResponse.from(store);
     }
 }

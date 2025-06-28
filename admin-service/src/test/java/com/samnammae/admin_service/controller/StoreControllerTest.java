@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.samnammae.admin_service.config.TestConfig;
 import com.samnammae.admin_service.dto.request.StoreRequest;
 import com.samnammae.admin_service.dto.response.StoreSimpleResponse;
+import com.samnammae.admin_service.dto.response.StoreResponse;
 import com.samnammae.admin_service.service.StoreService;
 import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
@@ -140,4 +141,77 @@ class StoreControllerTest {
                 .andExpect(jsonPath("$.data[1].storeId").value(2L))
                 .andExpect(jsonPath("$.data[1].name").value("두번째매장"));
     }
+
+    @Test
+    @DisplayName("매장 정보 조회 성공 테스트")
+    void getStore_success() throws Exception {
+        // given
+        Long userId = 1L;
+        Long storeId = 1L;
+
+        StoreResponse storeResponse = StoreResponse.builder()
+                .storeId("1")
+                .name("테스트매장")
+                .phone("010-1234-5678")
+                .address("서울시 어딘가")
+                .mainImg("main-image.jpg")
+                .startPage(new StoreResponse.StartPage("logo.jpg", "매장 소개입니다.", "background.jpg"))
+                .theme(new StoreResponse.Theme("#002F6C", "#0051A3", "#F8F9FA"))
+                .build();
+
+        Mockito.when(storeService.getStore(userId, storeId)).thenReturn(storeResponse);
+
+        // when & then
+        mockMvc.perform(get("/api/admin/store/{storeId}", storeId)
+                        .header("X-User-Id", userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.storeId").value("1"))
+                .andExpect(jsonPath("$.data.name").value("테스트매장"))
+                .andExpect(jsonPath("$.data.phone").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.address").value("서울시 어딘가"))
+                .andExpect(jsonPath("$.data.mainImg").value("main-image.jpg"))
+                .andExpect(jsonPath("$.data.startPage.logoImg").value("logo.jpg"))
+                .andExpect(jsonPath("$.data.theme.mainColor").value("#002F6C"));
+    }
+
+    @Test
+    @DisplayName("매장 정보 조회 실패 테스트 - 존재하지 않는 매장")
+    void getStore_fail_storeNotFound() throws Exception {
+        // given
+        Long userId = 1L;
+        Long storeId = 999L;
+
+        Mockito.when(storeService.getStore(userId, storeId))
+                .thenThrow(new CustomException(ErrorCode.STORE_NOT_FOUND));
+
+        // when & then
+        mockMvc.perform(get("/api/admin/store/{storeId}", storeId)
+                        .header("X-User-Id", userId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ErrorCode.STORE_NOT_FOUND.getStatus()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.STORE_NOT_FOUND.getMessage()));
+    }
+
+    @Test
+    @DisplayName("매장 정보 조회 실패 테스트 - 권한 없음")
+    void getStore_fail_forbidden() throws Exception {
+        // given
+        Long userId = 1L;
+        Long storeId = 2L;
+
+        Mockito.when(storeService.getStore(userId, storeId))
+                .thenThrow(new CustomException(ErrorCode.FORBIDDEN_ACCESS));
+
+        // when & then
+        mockMvc.perform(get("/api/admin/store/{storeId}", storeId)
+                        .header("X-User-Id", userId))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ErrorCode.FORBIDDEN_ACCESS.getStatus()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.FORBIDDEN_ACCESS.getMessage()));
+    }
+
+
 }
