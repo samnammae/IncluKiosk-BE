@@ -3,6 +3,7 @@ package com.samnammae.admin_service.service;
 import com.samnammae.admin_service.domain.store.Store;
 import com.samnammae.admin_service.domain.store.StoreRepository;
 import com.samnammae.admin_service.dto.request.StoreRequest;
+import com.samnammae.admin_service.dto.response.StoreResponse;
 import com.samnammae.admin_service.dto.response.StoreSimpleResponse;
 import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
@@ -20,6 +21,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -204,6 +206,92 @@ class StoreServiceTest {
 
         // then
         verify(storeRepository).findAllByOwnerId(userId);
+    }
+
+    @Test
+    @DisplayName("특정 매장 조회 성공 테스트")
+    void getStore_success() {
+        // given
+        Long userId = 1L;
+        Long storeId = 1L;
+
+        Store store = Store.builder()
+                .id(storeId)
+                .ownerId(userId)
+                .name("테스트매장")
+                .phone("010-1234-5678")
+                .address("서울시 어딘가")
+                .introduction("매장 소개입니다.")
+                .mainImgUrl("main-image.jpg")
+                .logoImgUrl("logo.jpg")
+                .startBackgroundUrl("background.jpg")
+                .mainColor("#002F6C")
+                .subColor("#0051A3")
+                .textColor("#F8F9FA")
+                .build();
+
+        given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
+
+        // when
+        StoreResponse response = storeService.getStore(userId, storeId);
+
+        // then
+        assertThat(response).isNotNull();
+        assertThat(response.getStoreId()).isEqualTo(storeId.toString());
+        assertThat(response.getName()).isEqualTo("테스트매장");
+        assertThat(response.getPhone()).isEqualTo("010-1234-5678");
+        assertThat(response.getAddress()).isEqualTo("서울시 어딘가");
+        assertThat(response.getMainImg()).isEqualTo("main-image.jpg");
+        assertThat(response.getStartPage().getLogoImg()).isEqualTo("logo.jpg");
+        assertThat(response.getStartPage().getIntroduction()).isEqualTo("매장 소개입니다.");
+        assertThat(response.getStartPage().getStartBackground()).isEqualTo("background.jpg");
+        assertThat(response.getTheme().getMainColor()).isEqualTo("#002F6C");
+        assertThat(response.getTheme().getSubColor()).isEqualTo("#0051A3");
+        assertThat(response.getTheme().getTextColor()).isEqualTo("#F8F9FA");
+    }
+
+    @Test
+    @DisplayName("매장이 존재하지 않는 경우 예외 발생")
+    void getStore_storeNotFound() {
+        // given
+        Long userId = 1L;
+        Long storeId = 999L;
+
+        given(storeRepository.findById(storeId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> storeService.getStore(userId, storeId))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> {
+                    CustomException ce = (CustomException) e;
+                    assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.STORE_NOT_FOUND);
+                });
+    }
+
+    @Test
+    @DisplayName("다른 사용자의 매장에 접근할 경우 예외 발생")
+    void getStore_forbiddenAccess() {
+        // given
+        Long userId = 1L;
+        Long storeId = 1L;
+        Long differentOwnerId = 2L; // 다른 소유자 ID
+
+        Store store = Store.builder()
+                .id(storeId)
+                .ownerId(differentOwnerId) // 다른 소유자 ID 설정
+                .name("테스트매장")
+                .phone("010-1234-5678")
+                .build();
+
+        given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
+
+        // when & then
+        assertThatThrownBy(() -> storeService.getStore(userId, storeId))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> {
+                    CustomException ce = (CustomException) e;
+                    assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN_ACCESS);
+                });
     }
 
     // 테스트에 사용할 요청 객체 생성 메소드
