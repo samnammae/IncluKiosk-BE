@@ -1,6 +1,7 @@
 package com.samnammae.admin_service.controller;
 
 import com.samnammae.admin_service.dto.request.StoreRequest;
+import com.samnammae.admin_service.dto.response.StoreResponse;
 import com.samnammae.admin_service.dto.response.StoreSimpleResponse;
 import com.samnammae.admin_service.service.StoreService;
 import com.samnammae.common.response.ApiResponse;
@@ -45,5 +46,16 @@ public class StoreController {
     ) {
         List<StoreSimpleResponse> storeList = storeService.getStoreList(userId);
         return ApiResponse.success(storeList);
+    }
+
+    // 특정 매장 조회
+    @GetMapping("/{storeId}")
+    @Operation(summary = "특정 매장 조회", description = "매장 ID를 통해 특정 매장의 상세 정보를 조회합니다.")
+    public ApiResponse<StoreResponse> getStore(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long storeId
+    ) {
+        StoreResponse store = storeService.getStore(userId, storeId);
+        return ApiResponse.success(store);
     }
 }
