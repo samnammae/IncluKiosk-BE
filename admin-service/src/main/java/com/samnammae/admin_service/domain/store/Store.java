@@ -55,4 +55,20 @@ public class Store {
 
     @LastModifiedDate
     private LocalDateTime updatedAt; // 수정 시각
+
+    // 매장 정보 수정
+    public void update(String name, String phone, String address, String introduction,
+                            String mainImgUrl, String logoImgUrl, String startBackgroundUrl,
+                            String mainColor, String subColor, String textColor) {
+        this.name = name;
+        this.phone = phone;
+        this.address = address;
+        this.introduction = introduction;
+        this.mainImgUrl = mainImgUrl;
+        this.logoImgUrl = logoImgUrl;
+        this.startBackgroundUrl = startBackgroundUrl;
+        this.mainColor = mainColor;
+        this.subColor = subColor;
+        this.textColor = textColor;
+    }
 }
