@@ -79,4 +79,37 @@ public class StoreService {
 
         return StoreResponse.from(store);
     }
+
+    // 매장 정보 수정
+    public StoreResponse updateStore(Long userId, Long storeId, StoreRequest request) {
+        // 매장 존재 여부 확인
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+
+        // 매장 소유자 확인
+        if (!store.getOwnerId().equals(userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
+        // 파일 업로드
+        String mainImgUrl = uploadFile(request.getMainImg());
+        String logoImgUrl = uploadFile(request.getLogoImg());
+        String backgroundUrl = uploadFile(request.getStartBackground());
+
+        // 매장 정보 업데이트
+        store.update(
+                request.getName(),
+                request.getPhone(),
+                request.getAddress(),
+                request.getIntroduction(),
+                mainImgUrl,
+                logoImgUrl,
+                backgroundUrl,
+                request.getMainColor(),
+                request.getSubColor(),
+                request.getTextColor()
+        );
+
+        return StoreResponse.from(storeRepository.save(store));
+    }
 }
