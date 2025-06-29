@@ -294,6 +294,113 @@ class StoreServiceTest {
                 });
     }
 
+    @Test
+    @DisplayName("매장 정보 수정 성공 테스트")
+    void updateStore_success() {
+        // given
+        Long userId = 1L;
+        Long storeId = 1L;
+        StoreRequest request = createStoreRequest();
+        String expectedFileUrl = "updated-file.jpg";
+
+        Store existingStore = Store.builder()
+                .id(storeId)
+                .ownerId(userId)
+                .name("기존매장")
+                .phone("010-0000-0000")
+                .address("기존 주소")
+                .introduction("기존 소개")
+                .mainImgUrl("old-main.jpg")
+                .logoImgUrl("old-logo.jpg")
+                .startBackgroundUrl("old-bg.jpg")
+                .mainColor("#FFFFFF")
+                .subColor("#000000")
+                .textColor("#000000")
+                .build();
+
+        given(storeRepository.findById(storeId)).willReturn(Optional.of(existingStore));
+        given(fileStorageService.upload(any())).willReturn(expectedFileUrl);
+        given(storeRepository.save(any())).willReturn(existingStore);
+
+        // when
+        StoreResponse response = storeService.updateStore(userId, storeId, request);
+
+        // then
+        assertThat(response.getStoreId()).isEqualTo(storeId.toString());
+        assertThat(response.getName()).isEqualTo(request.getName());
+        assertThat(response.getPhone()).isEqualTo(request.getPhone());
+        assertThat(response.getAddress()).isEqualTo(request.getAddress());
+        assertThat(response.getMainImg()).isEqualTo(expectedFileUrl);
+        assertThat(response.getStartPage().getLogoImg()).isEqualTo(expectedFileUrl);
+        assertThat(response.getStartPage().getIntroduction()).isEqualTo(request.getIntroduction());
+        assertThat(response.getStartPage().getStartBackground()).isEqualTo(expectedFileUrl);
+        assertThat(response.getTheme().getMainColor()).isEqualTo(request.getMainColor());
+        assertThat(response.getTheme().getSubColor()).isEqualTo(request.getSubColor());
+        assertThat(response.getTheme().getTextColor()).isEqualTo(request.getTextColor());
+
+        // 저장된 엔티티 내용 검증
+        verify(storeRepository).save(storeCaptor.capture());
+        Store capturedStore = storeCaptor.getValue();
+
+        assertThat(capturedStore.getOwnerId()).isEqualTo(userId);
+        assertThat(capturedStore.getName()).isEqualTo(request.getName());
+        assertThat(capturedStore.getPhone()).isEqualTo(request.getPhone());
+        assertThat(capturedStore.getAddress()).isEqualTo(request.getAddress());
+        assertThat(capturedStore.getIntroduction()).isEqualTo(request.getIntroduction());
+        assertThat(capturedStore.getMainImgUrl()).isEqualTo(expectedFileUrl);
+        assertThat(capturedStore.getLogoImgUrl()).isEqualTo(expectedFileUrl);
+        assertThat(capturedStore.getStartBackgroundUrl()).isEqualTo(expectedFileUrl);
+        assertThat(capturedStore.getMainColor()).isEqualTo(request.getMainColor());
+        assertThat(capturedStore.getSubColor()).isEqualTo(request.getSubColor());
+        assertThat(capturedStore.getTextColor()).isEqualTo(request.getTextColor());
+    }
+
+    @Test
+    @DisplayName("매장 정보 수정 - 매장이 존재하지 않는 경우 예외 발생")
+    void updateStore_storeNotFound() {
+        // given
+        Long userId = 1L;
+        Long storeId = 999L; // 존재하지 않는 매장 ID
+        StoreRequest request = createStoreRequest();
+
+        given(storeRepository.findById(storeId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> storeService.updateStore(userId, storeId, request))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> {
+                    CustomException ce = (CustomException) e;
+                    assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.STORE_NOT_FOUND);
+                });
+    }
+
+    @Test
+    @DisplayName("매장 정보 수정 - 다른 사용자의 매장에 접근할 경우 예외 발생")
+    void updateStore_forbiddenAccess() {
+        // given
+        Long userId = 1L;
+        Long storeId = 1L;
+        Long differentOwnerId = 2L; // 다른 소유자 ID
+        StoreRequest request = createStoreRequest();
+
+        Store store = Store.builder()
+                .id(storeId)
+                .ownerId(differentOwnerId) // 다른 소유자 ID 설정
+                .name("테스트매장")
+                .phone("010-1234-5678")
+                .build();
+
+        given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
+
+        // when & then
+        assertThatThrownBy(() -> storeService.updateStore(userId, storeId, request))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> {
+                    CustomException ce = (CustomException) e;
+                    assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN_ACCESS);
+                });
+    }
+
     // 테스트에 사용할 요청 객체 생성 메소드
     private StoreRequest createStoreRequest() {
         StoreRequest request = new StoreRequest();

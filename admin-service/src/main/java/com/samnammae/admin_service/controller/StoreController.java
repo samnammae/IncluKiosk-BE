@@ -58,4 +58,22 @@ public class StoreController {
         StoreResponse store = storeService.getStore(userId, storeId);
         return ApiResponse.success(store);
     }
+
+    // 매장 정보 수정
+    @PutMapping("/{storeId}")
+    @Operation(summary = "매장 정보 수정", description = "매장 ID를 통해 매장 정보를 수정합니다.")
+    public ApiResponse<StoreResponse> updateStore(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long storeId,
+            @RequestPart("request") StoreRequest request,
+            @RequestPart(value = "mainImg", required = false) MultipartFile mainImg,
+            @RequestPart(value = "logoImg", required = false) MultipartFile logoImg,
+            @RequestPart(value = "startBackground", required = false) MultipartFile startBackground
+    ) {
+        request.setMainImg(mainImg);
+        request.setLogoImg(logoImg);
+        request.setStartBackground(startBackground);
+        StoreResponse store = storeService.updateStore(userId, storeId, request);
+        return ApiResponse.success(store);
+    }
 }
