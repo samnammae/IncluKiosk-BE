@@ -22,8 +22,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -388,4 +387,73 @@ class StoreControllerTest {
                 .andExpect(jsonPath("$.message").value("파일 업로드에 실패했습니다."));
     }
 
+    @Test
+    @DisplayName("매장 삭제 성공 테스트")
+    void deleteStore_success() throws Exception {
+        // given
+        Long userId = 1L; // 가게 소유자 ID
+        Long storeId = 1L; // 삭제할 매장 ID
+
+        Mockito.doNothing().when(storeService).deleteStore(userId, storeId);
+
+        // when and then
+        mockMvc.perform(delete("/api/admin/store/{storeId}", storeId)
+                        .header("X-User-Id", userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("매장 삭제 실패 테스트 - 매장 존재하지 않음")
+    void deleteStore_fail_storeNotFound() throws Exception {
+        // given
+        Long userId = 1L; // 가게 소유자 ID
+        Long storeId = 999L; // 존재하지 않는 매장 ID
+
+        Mockito.doThrow(new CustomException(ErrorCode.STORE_NOT_FOUND)).when(storeService).deleteStore(userId, storeId);
+
+        // when and then
+        mockMvc.perform(delete("/api/admin/store/{storeId}", storeId)
+                        .header("X-User-Id", userId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ErrorCode.STORE_NOT_FOUND.getStatus()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.STORE_NOT_FOUND.getMessage()));
+    }
+
+    @Test
+    @DisplayName("매장 삭제 실패 테스트 - 권한 없음")
+    void deleteStore_fail_forbidden() throws Exception {
+        // given
+        Long userId = 1L; // 가게 소유자 ID
+        Long storeId = 2L; // 다른 사용자의 매장 ID
+
+        Mockito.doThrow(new CustomException(ErrorCode.FORBIDDEN_ACCESS)).when(storeService).deleteStore(userId, storeId);
+
+        // when and then
+        mockMvc.perform(delete("/api/admin/store/{storeId}", storeId)
+                        .header("X-User-Id", userId))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ErrorCode.FORBIDDEN_ACCESS.getStatus()))
+                .andExpect(jsonPath("$.message").value(ErrorCode.FORBIDDEN_ACCESS.getMessage()));
+    }
+
+    @Test
+    @DisplayName("매장 삭제 실패 테스트 - 파일 삭제 실패")
+    void deleteStore_fail_dueToFileDeleteError() throws Exception {
+        // given
+        Long userId = 1L; // 가게 소유자 ID
+        Long storeId = 1L; // 삭제할 매장 ID
+
+        Mockito.doThrow(new CustomException(ErrorCode.FILE_DELETE_FAILED)).when(storeService).deleteStore(userId, storeId);
+
+        // when and then
+        mockMvc.perform(delete("/api/admin/store/{storeId}", storeId)
+                        .header("X-User-Id", userId))
+                .andExpect(status().is5xxServerError())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(500))
+                .andExpect(jsonPath("$.message").value("파일 삭제에 실패했습니다."));
+    }
 }
