@@ -161,4 +161,40 @@ class LocalFileStorageServiceTest {
         // then
         assertThat(extension).isEqualTo("");
     }
+
+    @Test
+    @DisplayName("파일 삭제 성공 테스트")
+    void delete_success() {
+        // given
+        String fileName = "test-file-to-delete.jpg";
+        String contentType = "image/jpeg";
+        byte[] content = "test image content".getBytes();
+        MultipartFile file = new MockMultipartFile("file", fileName, contentType, content);
+        String savedPath = fileStorageService.upload(file);
+
+        // when
+        fileStorageService.delete(savedPath.substring(7)); // "/files/" 제외
+
+        // then
+        File[] files = tempDir.toFile().listFiles();
+        assertThat(files).isNotNull();
+        assertThat(files).isEmpty(); // 파일이 삭제되었는지 확인
+    }
+
+    @Test
+    @DisplayName("파일 삭제 실패 테스트 - 파일이 존재하지 않는 경우")
+    void delete_fileNotFound() {
+        // given
+        String nonExistentFileName = "non-existent-file.jpg";
+        File file = new File(tempDir.toString(), nonExistentFileName);
+
+        // 파일이 존재하지 않는 것 확인
+        assertThat(file.exists()).isFalse();
+
+        // when
+        fileStorageService.delete(nonExistentFileName);
+
+        // then
+        // 예외가 발생하지 않고 성공적으로 완료되어야 함
+    }
 }

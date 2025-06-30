@@ -401,6 +401,127 @@ class StoreServiceTest {
                 });
     }
 
+    @Test
+    @DisplayName("매장 삭제 성공 테스트")
+    void deleteStore_success() {
+        // given
+        Long userId = 1L;
+        Long storeId = 1L;
+
+        Store store = Store.builder()
+                .id(storeId)
+                .ownerId(userId)
+                .name("테스트매장")
+                .phone("010-1234-5678")
+                .address("서울시 어딘가")
+                .introduction("매장 소개입니다.")
+                .mainImgUrl("main-image.jpg")
+                .logoImgUrl("logo.jpg")
+                .startBackgroundUrl("background.jpg")
+                .mainColor("#002F6C")
+                .subColor("#0051A3")
+                .textColor("#F8F9FA")
+                .build();
+
+        given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
+        willDoNothing().given(fileStorageService).delete(anyString());
+
+        // when
+        storeService.deleteStore(userId, storeId);
+
+        // then
+        verify(fileStorageService).delete("main-image.jpg");
+        verify(fileStorageService).delete("logo.jpg");
+        verify(fileStorageService).delete("background.jpg");
+        verify(storeRepository).delete(store);
+    }
+
+    @Test
+    @DisplayName("매장 삭제 - 매장이 존재하지 않는 경우 예외 발생")
+    void deleteStore_storeNotFound() {
+        // given
+        Long userId = 1L;
+        Long storeId = 999L; // 존재하지 않는 매장 ID
+
+        given(storeRepository.findById(storeId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> storeService.deleteStore(userId, storeId))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> {
+                    CustomException ce = (CustomException) e;
+                    assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.STORE_NOT_FOUND);
+                });
+
+        // 저장소 메소드가 호출되지 않았는지 확인
+        then(fileStorageService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("매장 삭제 - 다른 사용자의 매장에 접근할 경우 예외 발생")
+    void deleteStore_forbiddenAccess() {
+        // given
+        Long userId = 1L;
+        Long storeId = 1L;
+        Long differentOwnerId = 2L; // 다른 소유자 ID
+
+        Store store = Store.builder()
+                .id(storeId)
+                .ownerId(differentOwnerId) // 다른 소유자 ID 설정
+                .name("테스트매장")
+                .phone("010-1234-5678")
+                .build();
+
+        given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
+
+        // when & then
+        assertThatThrownBy(() -> storeService.deleteStore(userId, storeId))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> {
+                    CustomException ce = (CustomException) e;
+                    assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN_ACCESS);
+                });
+
+        // 저장소 메소드가 호출되지 않았는지 확인
+        then(fileStorageService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("매장 삭제 - 파일 삭제 실패 시 예외 발생")
+    void deleteStore_fileDeleteFail() {
+        // given
+        Long userId = 1L;
+        Long storeId = 1L;
+
+        Store store = Store.builder()
+                .id(storeId)
+                .ownerId(userId)
+                .name("테스트매장")
+                .phone("010-1234-5678")
+                .address("서울시 어딘가")
+                .introduction("매장 소개입니다.")
+                .mainImgUrl("main-image.jpg")
+                .logoImgUrl("logo.jpg")
+                .startBackgroundUrl("background.jpg")
+                .mainColor("#002F6C")
+                .subColor("#0051A3")
+                .textColor("#F8F9FA")
+                .build();
+
+        given(storeRepository.findById(storeId)).willReturn(Optional.of(store));
+        // CustomException으로 변환하여 던져지도록 수정
+        willThrow(new CustomException(ErrorCode.FILE_DELETE_FAILED))
+                .given(fileStorageService).delete(anyString());
+
+        // when & then
+        assertThatThrownBy(() -> storeService.deleteStore(userId, storeId))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> {
+                    CustomException ce = (CustomException) e;
+                    assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.FILE_DELETE_FAILED);
+                });
+    }
+
     // 테스트에 사용할 요청 객체 생성 메소드
     private StoreRequest createStoreRequest() {
         StoreRequest request = new StoreRequest();
