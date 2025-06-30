@@ -4,6 +4,7 @@ import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
@@ -15,186 +16,170 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class LocalFileStorageServiceTest {
 
-    private LocalFileStorageService fileStorageService;
-
+    // JUnit 5에서 제공하는 임시 디렉토리 기능. 각 테스트 실행 후 자동으로 정리됩니다.
     @TempDir
     Path tempDir;
+    private LocalFileStorageService fileStorageService;
 
     @BeforeEach
     void setUp() {
         fileStorageService = new LocalFileStorageService();
-        // ReflectionTestUtils를 사용하여 private 필드에 값 주입
+        // ReflectionTestUtils를 사용하여 private 필드인 uploadDir에 테스트용 임시 디렉토리 경로를 주입합니다.
         ReflectionTestUtils.setField(fileStorageService, "uploadDir", tempDir.toString());
     }
 
-    @Test
-    @DisplayName("파일 업로드 성공 테스트")
-    void upload_success() {
-        // given
-        String fileName = "test-file.jpg";
-        String contentType = "image/jpeg";
-        byte[] content = "test image content".getBytes();
-        MultipartFile file = new MockMultipartFile("file", fileName, contentType, content);
+    // --- Upload Tests ---
 
-        // when
-        String savedPath = fileStorageService.upload(file);
+    @Nested
+    @DisplayName("파일 업로드 (upload)")
+    class UploadTests {
+        @Test
+        @DisplayName("성공: 정상적인 파일을 업로드하면 UUID로 생성된 순수 파일명을 반환한다")
+        void upload_success() throws IOException {
+            // given: 테스트용 파일 준비
+            String originalFileName = "test-image.jpg";
+            String contentType = "image/jpeg";
+            byte[] content = "test image content".getBytes();
+            MultipartFile file = new MockMultipartFile("file", originalFileName, contentType, content);
 
-        // then
-        assertThat(savedPath).isNotNull();
-        assertThat(savedPath).startsWith("/files/");
+            // when: 파일 업로드 실행
+            String savedFileName = fileStorageService.upload(file);
 
-        // 파일이 실제로 저장되었는지 확인
-        File[] files = tempDir.toFile().listFiles();
-        assertThat(files).isNotNull();
-        assertThat(files).hasSize(1);
+            // then: 결과 검증
+            assertThat(savedFileName).isNotNull();
+            assertThat(savedFileName).doesNotStartWith("/"); // 반환값이 URL 경로가 아닌 순수 파일명인지 확인
+            assertThat(savedFileName).endsWith(".jpg");      // 확장자가 올바르게 유지되었는지 확인
 
-        String uuid = savedPath.substring(7); // "/files/" 제외
-        assertThat(files[0].getName()).isEqualTo(uuid);
+            // 파일이 실제로 임시 디렉토리에 지정된 이름으로 저장되었는지 확인
+            File savedFile = new File(tempDir.toString(), savedFileName);
+            assertThat(savedFile).exists();
+            // 저장된 파일의 내용이 원본과 일치하는지 확인
+            assertThat(Files.readAllBytes(savedFile.toPath())).isEqualTo(content);
+        }
 
-        // 파일 내용 확인
-        try {
-            byte[] savedContent = Files.readAllBytes(files[0].toPath());
-            assertThat(savedContent).isEqualTo(content);
-        } catch (IOException e) {
-            fail("파일을 읽는 중 예외 발생", e);
+        @Test
+        @DisplayName("성공: 파일이 null이거나 비어있으면 null을 반환하고 아무 파일도 생성하지 않는다")
+        void upload_nullOrEmptyFile() {
+            // when
+            String resultForNullFile = fileStorageService.upload(null);
+            String resultForEmptyFile = fileStorageService.upload(new MockMultipartFile("empty", new byte[0]));
+
+            // then
+            assertThat(resultForNullFile).isNull();
+            assertThat(resultForEmptyFile).isNull();
+            // 임시 디렉토리가 비어있는지 확인
+            assertThat(tempDir.toFile().listFiles()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("실패: 파일 저장 중 IOException 발생 시 CustomException으로 전환된다")
+        void upload_fail_dueToIOException() throws IOException {
+            // given: I/O 예외를 발생시키는 Mock MultipartFile 준비
+            MultipartFile mockFile = Mockito.mock(MultipartFile.class);
+            Mockito.when(mockFile.getOriginalFilename()).thenReturn("io-error.png");
+            // transferTo 호출 시 IOException을 던지도록 설정
+            Mockito.doThrow(new IOException("Disk is full")).when(mockFile).transferTo(Mockito.any(File.class));
+
+            // when & then: 예외 발생 및 타입, 에러 코드 검증
+            assertThatThrownBy(() -> fileStorageService.upload(mockFile))
+                    .isInstanceOf(CustomException.class)
+                    .satisfies(e -> {
+                        CustomException ce = (CustomException) e;
+                        assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.FILE_UPLOAD_FAILED);
+                    });
         }
     }
 
-    @Test
-    @DisplayName("확장자가 없는 파일 업로드 테스트")
-    void upload_fileWithoutExtension() {
-        // given
-        String fileName = "test-file-without-extension";
-        String contentType = "application/octet-stream";
-        byte[] content = "test content without extension".getBytes();
-        MultipartFile file = new MockMultipartFile("file", fileName, contentType, content);
 
-        // when
-        String savedPath = fileStorageService.upload(file);
+    // --- Delete Tests ---
 
-        // then
-        assertThat(savedPath).isNotNull();
+    @Nested
+    @DisplayName("파일 삭제 (delete)")
+    class DeleteTests {
+        @Test
+        @DisplayName("성공: 존재하는 파일을 정확히 삭제한다")
+        void delete_success() throws IOException {
+            // given: 삭제할 파일을 미리 생성
+            String fileName = UUID.randomUUID() + ".txt";
+            File fileToDelete = new File(tempDir.toString(), fileName);
+            Files.writeString(fileToDelete.toPath(), "delete me");
+            assertThat(fileToDelete).exists(); // 파일이 정상적으로 생성되었는지 확인
 
-        // 파일이 실제로 저장되었는지 확인
-        File[] files = tempDir.toFile().listFiles();
-        assertThat(files).isNotNull();
-        assertThat(files).hasSize(1);
+            // when: 파일 삭제 실행
+            fileStorageService.delete(fileName);
+
+            // then: 파일이 삭제되었는지 확인
+            assertThat(fileToDelete).doesNotExist();
+        }
+
+        @Test
+        @DisplayName("성공: 존재하지 않는 파일 삭제 시도 시 예외 없이 조용히 넘어간다")
+        void delete_nonExistentFile() {
+            // given
+            String nonExistentFileName = "i-do-not-exist.jpg";
+
+            // when & then: 예외가 발생하지 않음을 확인
+            assertDoesNotThrow(() -> fileStorageService.delete(nonExistentFileName));
+        }
+
+        @Test
+        @DisplayName("성공: 파일 이름이 null이거나 빈 문자열일 경우 예외 없이 조용히 넘어간다")
+        void delete_nullOrEmptyFileName() {
+            // when & then
+            assertDoesNotThrow(() -> fileStorageService.delete(null));
+            assertDoesNotThrow(() -> fileStorageService.delete(""));
+            assertDoesNotThrow(() -> fileStorageService.delete("   "));
+        }
+
+        @Test
+        @DisplayName("실패: 삭제 대상이 비어있지 않은 디렉토리일 경우 CustomException을 반환한다 (범용)")
+        void delete_fail_whenTargetIsNonEmptyDirectory() throws IOException {
+            // given: `file.delete()`가 false를 반환하는 OS 독립적인 시나리오를 구성
+            // 1. 삭제할 이름으로 디렉토리를 생성
+            String dirName = "non-empty-dir";
+            File directory = new File(tempDir.toString(), dirName);
+            directory.mkdir();
+
+            // 2. 그 디렉토리 안에 임의의 파일을 생성하여 비어있지 않도록 만듦
+            File fileInDir = new File(directory, "file.txt");
+            fileInDir.createNewFile();
+
+            assertThat(directory).exists().isDirectory(); // 디렉토리 생성 확인
+
+            // when & then: 예외 발생 및 타입, 에러 코드 검증
+            // 비어있지 않은 디렉토리에 delete()를 호출하면 false가 반환됨
+            assertThatThrownBy(() -> fileStorageService.delete(dirName))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.FILE_DELETE_FAILED);
+        }
     }
 
-    @Test
-    @DisplayName("null 파일명 처리 테스트")
-    void upload_nullFilename() {
-        // given
-        String contentType = "application/octet-stream";
-        byte[] content = "test content with null filename".getBytes();
-        MultipartFile file = new MockMultipartFile("file", null, contentType, content);
+    // --- getExtension Private Method Tests (참고용) ---
+    @Nested
+    @DisplayName("확장자 추출 (getExtension) - private method")
+    class GetExtensionTests {
+        @Test
+        @DisplayName("정상 파일명에서 확장자를 추출한다")
+        void getExtension_normalFilename() {
+            String extension = ReflectionTestUtils.invokeMethod(fileStorageService, "getExtension", "test.jpg");
+            assertThat(extension).isEqualTo(".jpg");
+        }
 
-        // when
-        String savedPath = fileStorageService.upload(file);
-
-        // then
-        assertThat(savedPath).isNotNull();
-
-        // 파일이 실제로 저장되었는지 확인
-        File[] files = tempDir.toFile().listFiles();
-        assertThat(files).isNotNull();
-        assertThat(files).hasSize(1);
-    }
-
-    @Test
-    @DisplayName("파일 업로드 중 IOException 발생 시 CustomException 반환")
-    void upload_fail_dueToIOException() throws IOException {
-        // given
-        MultipartFile mockFile = Mockito.mock(MultipartFile.class);
-        Mockito.when(mockFile.getOriginalFilename()).thenReturn("test.png");
-        Mockito.doThrow(new IOException("disk full")).when(mockFile).transferTo(Mockito.any(File.class));
-
-        // when and then
-        assertThatThrownBy(() -> fileStorageService.upload(mockFile))
-                .isInstanceOf(CustomException.class)
-                .satisfies(e -> {
-                    CustomException ce = (CustomException) e;
-                    assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.FILE_UPLOAD_FAILED);
-                });
-    }
-
-    @Test
-    @DisplayName("getExtension 메소드 테스트 - 정상 파일명")
-    void getExtension_normalFilename() {
-        // given
-        String filename = "test.jpg";
-
-        // when
-        String extension = ReflectionTestUtils.invokeMethod(fileStorageService, "getExtension", filename);
-
-        // then
-        assertThat(extension).isEqualTo(".jpg");
-    }
-
-    @Test
-    @DisplayName("getExtension 메소드 테스트 - null 파일명")
-    void getExtension_nullFilename() {
-        // given
-        String filename = null;
-
-        // when
-        String extension = ReflectionTestUtils.invokeMethod(fileStorageService, "getExtension", filename);
-
-        // then
-        assertThat(extension).isEqualTo("");
-    }
-
-    @Test
-    @DisplayName("getExtension 메소드 테스트 - 확장자 없는 파일명")
-    void getExtension_filenameWithoutExtension() {
-        // given
-        String filename = "testfile";
-
-        // when
-        String extension = ReflectionTestUtils.invokeMethod(fileStorageService, "getExtension", filename);
-
-        // then
-        assertThat(extension).isEqualTo("");
-    }
-
-    @Test
-    @DisplayName("파일 삭제 성공 테스트")
-    void delete_success() {
-        // given
-        String fileName = "test-file-to-delete.jpg";
-        String contentType = "image/jpeg";
-        byte[] content = "test image content".getBytes();
-        MultipartFile file = new MockMultipartFile("file", fileName, contentType, content);
-        String savedPath = fileStorageService.upload(file);
-
-        // when
-        fileStorageService.delete(savedPath.substring(7)); // "/files/" 제외
-
-        // then
-        File[] files = tempDir.toFile().listFiles();
-        assertThat(files).isNotNull();
-        assertThat(files).isEmpty(); // 파일이 삭제되었는지 확인
-    }
-
-    @Test
-    @DisplayName("파일 삭제 실패 테스트 - 파일이 존재하지 않는 경우")
-    void delete_fileNotFound() {
-        // given
-        String nonExistentFileName = "non-existent-file.jpg";
-        File file = new File(tempDir.toString(), nonExistentFileName);
-
-        // 파일이 존재하지 않는 것 확인
-        assertThat(file.exists()).isFalse();
-
-        // when
-        fileStorageService.delete(nonExistentFileName);
-
-        // then
-        // 예외가 발생하지 않고 성공적으로 완료되어야 함
+        @Test
+        @DisplayName("파일명이 null일 경우 빈 문자열을 반환한다")
+        void getExtension_nullFilename() {
+            // null 인자를 전달할 때는 new Object[]로 감싸야 합니다.
+            String extension = ReflectionTestUtils.invokeMethod(fileStorageService, "getExtension", new Object[]{null});
+            assertThat(extension).isEqualTo("");
+        }
     }
 }
