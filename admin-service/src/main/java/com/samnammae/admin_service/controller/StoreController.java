@@ -76,4 +76,15 @@ public class StoreController {
         StoreResponse store = storeService.updateStore(userId, storeId, request);
         return ApiResponse.success(store);
     }
+
+    // 매장 삭제
+    @DeleteMapping("/{storeId}")
+    @Operation(summary = "매장 삭제", description = "매장 ID를 통해 매장을 삭제합니다.")
+    public ApiResponse<Void> deleteStore(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long storeId
+    ) {
+        storeService.deleteStore(userId, storeId);
+        return ApiResponse.success(null);
+    }
 }

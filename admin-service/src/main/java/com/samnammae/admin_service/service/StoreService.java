@@ -9,8 +9,10 @@ import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -111,5 +113,29 @@ public class StoreService {
         );
 
         return StoreResponse.from(storeRepository.save(store));
+    }
+
+    // 매장 삭제
+    @Transactional
+    public void deleteStore(Long userId, Long storeId) {
+        // 매장 존재 여부 확인
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+
+        // 매장 소유자 확인
+        if (!store.getOwnerId().equals(userId)) {
+            throw new CustomException(ErrorCode.FORBIDDEN_ACCESS);
+        }
+
+        // 파일 삭제
+        List<String> filesToDelete = new ArrayList<>();
+        if (store.getMainImgUrl() != null) filesToDelete.add(store.getMainImgUrl());
+        if (store.getLogoImgUrl() != null) filesToDelete.add(store.getLogoImgUrl());
+        if (store.getStartBackgroundUrl() != null) filesToDelete.add(store.getStartBackgroundUrl());
+
+        filesToDelete.forEach(fileStorageService::delete);
+
+        // 매장 삭제
+        storeRepository.delete(store);
     }
 }
