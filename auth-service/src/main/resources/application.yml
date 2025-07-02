@@ -1,19 +1,10 @@
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    operations-sorter: method
-    tags-sorter: alpha
-    csrf:
-      enabled: false  # 스웨거 UI 테스트시 csrf 끄기
-
-jwt:
-  secret: ${JWT_SECRET} # 최소 256비트 (32바이트)
-  access-token-validity: 900000     # 15분 (단위: ms)
-  refresh-token-validity: 604800000 # 7일 (단위: ms)
+server:
+  port: 8081
 
 spring:
+  application:
+    name: auth-service
+
   config:
     import: optional:classpath:application-secret.yml
 
@@ -31,3 +22,27 @@ spring:
       hibernate:
         format_sql: true
     database-platform: org.hibernate.dialect.MySQL8Dialect
+
+jwt:
+  secret: ${JWT_SECRET} # 최소 256비트 (32바이트)
+  access-token-validity: 900000     # 15분 (단위: ms)
+  refresh-token-validity: 604800000 # 7일 (단위: ms)
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    csrf:
+      enabled: false  # 스웨거 UI 테스트시 csrf 끄기
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}

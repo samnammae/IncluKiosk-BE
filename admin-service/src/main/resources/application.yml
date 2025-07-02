@@ -1,17 +1,10 @@
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    operations-sorter: method
-    tags-sorter: alpha
-    csrf:
-      enabled: false  # 스웨거 UI 테스트시 csrf 끄기
-
-file:
-  upload-dir: ${user.dir}/uploads
+server:
+  port: 8082
 
 spring:
+  application:
+    name: admin-service
+
   config:
     import: optional:classpath:application-secret.yml
 
@@ -29,3 +22,23 @@ spring:
       hibernate:
         format_sql: true
     database-platform: org.hibernate.dialect.MySQL8Dialect
+
+file:
+  upload-dir: ${user.dir}/uploads
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
