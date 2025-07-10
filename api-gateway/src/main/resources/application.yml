@@ -50,3 +50,6 @@ springdoc:
 #      - name: Chatbot Service API
 #        url: /api/chatbot/v3/api-docs
     path: /swagger-ui.html # 통합 Swagger UI의 접근 경로
+
+jwt:
+    secret: ${JWT_SECRET}
