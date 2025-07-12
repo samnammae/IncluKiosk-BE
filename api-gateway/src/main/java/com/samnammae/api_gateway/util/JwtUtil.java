@@ -1,8 +1,13 @@
 package com.samnammae.api_gateway.util;
 
+import com.samnammae.common.exception.CustomException;
+import com.samnammae.common.exception.ErrorCode;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -18,24 +23,22 @@ public class JwtUtil {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    // 토큰 유효성 검증
-    public boolean validateToken(String token) {
+    public Claims validateAndParseClaims(String token) {
         try {
-            // 토큰을 파싱하면서 유효성 검증 (서명, 만료 시간 등)
-            Jwts.parserBuilder().setSigningKey(secretKey).build().parseClaimsJws(token);
-            return true;
-        } catch (Exception e) {
-            // 유효하지 않은 토큰 (서명 오류, 만료 등)일 경우 예외 발생
-            return false;
+            return Jwts.parserBuilder()
+                    .setSigningKey(secretKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (ExpiredJwtException e) {
+            // 토큰 만료 시
+            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
+        } catch (SignatureException | MalformedJwtException e) {
+            // 서명 오류 또는 토큰 형식이 잘못된 경우
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        } catch (IllegalArgumentException e) {
+            // 토큰이 null이거나 비어있는 경우
+            throw new CustomException(ErrorCode.TOKEN_MISSING);
         }
-    }
-
-    // 토큰 클레임 추출
-    public Claims getClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
     }
 }
