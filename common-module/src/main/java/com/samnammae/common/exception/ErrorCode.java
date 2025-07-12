@@ -15,7 +15,11 @@ public enum ErrorCode {
     FILE_UPLOAD_FAILED(500, "파일 업로드에 실패했습니다."),
     STORE_NOT_FOUND(404, "매장을 찾을 수 없습니다."),
     FORBIDDEN_ACCESS(403, "접근 권한이 없습니다."),
-    FILE_DELETE_FAILED(500, "파일 삭제에 실패했습니다.");
+    FILE_DELETE_FAILED(500, "파일 삭제에 실패했습니다."),
+
+    // Api Gateway
+    INTERNAL_SERVER_ERROR(500, "서버 내부 오류가 발생했습니다."),
+    EXPIRED_TOKEN(401, "토큰이 만료되었습니다."),;
 
     private final int status;
     private final String message;
