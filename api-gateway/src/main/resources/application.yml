@@ -25,6 +25,8 @@ spring:
                       uri: lb://admin-service # 로드 밸런싱을 통해 admin-service로 라우팅
                       predicates:
                         - Path=/api/admin/**
+                      filters:
+                        - AuthorizationHeader
 
 eureka:
   client:
