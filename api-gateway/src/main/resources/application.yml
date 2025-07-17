@@ -1,0 +1,57 @@
+server:
+  port: 8000 # API 게이트웨이의 포트 번호입니다.
+
+spring:
+  application:
+    name: api-gateway # 게이트웨이 자체의 이름
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          routes:
+            # Auth 서비스 라우팅 규칙
+                    - id: auth-service-route
+                      uri: lb://auth-service # 로드 밸런싱을 통해 auth-service로 라우팅
+                      predicates:
+                        - Path=/api/auth/**
+
+                    # Admin 서비스 라우팅 규칙
+                    - id: admin-service-route
+                      uri: lb://admin-service # 로드 밸런싱을 통해 admin-service로 라우팅
+                      predicates:
+                        - Path=/api/admin/**
+                      filters:
+                        - AuthorizationHeader
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+springdoc:
+  swagger-ui:
+    urls:
+      # 각 마이크로서비스의 OpenAPI JSON 엔드포인트를 지정합니다.
+      # 주의: 여기서는 서비스의 내부 URL 경로를 사용합니다.
+      - name: Auth Service API
+        url: /api/auth/v3/api-docs # Auth Service가 노출하는 OpenAPI JSON 경로
+      - name: Admin Service API
+        url: /api/admin/v3/api-docs # Admin Service가 노출하는 OpenAPI JSON 경로
+      # 다른 서비스들도 여기에 추가 (order, menu, chatbot 등)
+#      - name: Order Service API
+#        url: /api/order/v3/api-docs
+#      - name: Menu Service API
+#        url: /api/menu/v3/api-docs
+#      - name: Chatbot Service API
+#        url: /api/chatbot/v3/api-docs
+    path: /swagger-ui.html # 통합 Swagger UI의 접근 경로
+
+jwt:
+    secret: ${JWT_SECRET}

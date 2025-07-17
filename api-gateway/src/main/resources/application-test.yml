@@ -1,0 +1,10 @@
+jwt:
+  secret: your-test-jwt-secret-key-that-is-long-enough-for-hs256
+
+eureka:
+  client:
+    enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
