@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
  * 외부 의존성(JwtUtil)을 Mocking하여 필터의 로직만을 독립적으로 테스트합니다.
  */
 @ExtendWith(MockitoExtension.class)
-class AuthorizationHeaderFilterTest {
+class AuthorizationHeaderGatewayFilterFactoryTest {
 
     // @Mock: Mockito가 Mock 객체를 생성합니다.
     @Mock
@@ -39,14 +39,14 @@ class AuthorizationHeaderFilterTest {
 
     // @InjectMocks: @Mock으로 생성된 Mock 객체들을 테스트 대상 클래스에 주입합니다.
     @InjectMocks
-    private AuthorizationHeaderFilter authorizationHeaderFilter;
+    private AuthorizationHeaderGatewayFilterFactory authorizationHeaderFilter;
 
-    private AuthorizationHeaderFilter.Config config;
+    private AuthorizationHeaderGatewayFilterFactory.Config config;
 
     @BeforeEach
     void setUp() {
         // 테스트에 사용할 필터 Config 객체를 생성합니다.
-        config = new AuthorizationHeaderFilter.Config();
+        config = new AuthorizationHeaderGatewayFilterFactory.Config();
         // 각 테스트에 필요한 스터빙은 해당 테스트 메소드 내부에서 개별적으로 설정합니다.
     }
 
