@@ -6,7 +6,7 @@ ARG JAR_FILE=build/libs/*.jar
 COPY ${JAR_FILE} app.jar
 
 # 포트 오픈
-EXPOSE 8081
+EXPOSE 8761
 
 # 실행 명령
 ENTRYPOINT ["java","-jar","/app.jar"]
