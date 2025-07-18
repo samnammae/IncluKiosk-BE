@@ -1,0 +1,201 @@
+version: '3.8'
+
+services:
+  # --- 1. 데이터베이스 서비스들 ---
+
+  # 1.1. Auth Service용 MySQL 데이터베이스
+  mysql-db-auth:
+    image: mysql:8.0 # MySQL 8.0 버전 사용
+    ports:
+      - "3308:3306" # 호스트 포트 3306을 컨테이너 포트 3306에 매핑 (외부에서 접근 시)
+    environment:
+      MYSQL_ROOT_PASSWORD: ${AUTH_DB_ROOT_PASSWORD} # 강력하고 안전한 비밀번호로 변경하세요!
+      MYSQL_DATABASE: auth_db # Auth Service가 사용할 데이터베이스 이름
+      MYSQL_USER: ${AUTH_DB_USER} # Auth Service가 사용할 DB 사용자 이름
+      MYSQL_PASSWORD: ${AUTH_DB_PASSWORD} # Auth Service가 사용할 DB 사용자 비밀번호
+    volumes:
+      - mysql-data-auth:/var/lib/mysql # 데이터 영속성을 위한 볼륨 마운트
+    networks:
+      - my-msa-network
+
+  # 1.2. Admin Service용 MySQL 데이터베이스
+  mysql-db-admin:
+    image: mysql:8.0
+    ports:
+      - "3307:3306" # 호스트 포트 3307을 컨테이너 포트 3306에 매핑 (3306은 auth-db가 사용 중)
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ADMIN_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: admin_db # Admin Service가 사용할 데이터베이스 이름
+      MYSQL_USER: ${ADMIN_DB_USER} # Admin Service가 사용할 DB 사용자 이름
+      MYSQL_PASSWORD: ${ADMIN_DB_PASSWORD} # Admin Service가 사용할 DB 사용자 비밀번호
+    volumes:
+      - mysql-data-admin:/var/lib/mysql
+    networks:
+      - my-msa-network
+
+  # 1.3. Menu Service용 MySQL 데이터베이스
+#  mysql-db-menu:
+#    image: mysql:8.0
+#    ports:
+#      - "3308:3306" # 호스트 포트 3308을 컨테이너 포트 3306에 매핑 (다른 DB와 중복되지 않게)
+#    environment:
+#      MYSQL_ROOT_PASSWORD: your_root_password_for_menu_db # 강력하고 안전한 비밀번호로 변경하세요!
+#      MYSQL_DATABASE: menu_db # Menu Service가 사용할 데이터베이스 이름
+#      MYSQL_USER: menu_user
+#      MYSQL_PASSWORD: menu_password
+#    volumes:
+#      - mysql-data-menu:/var/lib/mysql
+#    networks:
+#      - my-msa-network
+
+  # 1.4. Order Service용 MongoDB 데이터베이스 (MongoDB 사용 시)
+#  mongodb-order:
+#    image: mongo:latest # 최신 MongoDB 공식 이미지 사용
+#    ports:
+#      - "27017:27017" # 호스트 포트 27017을 컨테이너 포트 27017에 매핑
+#    environment:
+#      MONGO_INITDB_ROOT_USERNAME: order_user # MongoDB 사용자 이름
+#      MONGO_INITDB_ROOT_PASSWORD: order_password # MongoDB 사용자 비밀번호
+#      MONGO_INITDB_DATABASE: order_db # Order Service가 사용할 데이터베이스 이름
+#    volumes:
+#      - mongodb-data-order:/data/db # 데이터 영속성을 위한 볼륨 마운트
+#    networks:
+#      - my-msa-network
+
+  # --- 2. 코어 MSA 인프라 서비스 ---
+
+  # 2.1. 유레카 서버 (Service Discovery)
+  eureka-server:
+    build:
+      context: ./eureka-server # 유레카 서버 프로젝트의 경로 (docker-compose.yml 기준 상대 경로)
+      dockerfile: Dockerfile
+    ports:
+      - "8761:8761" # 유레카 서버 포트 매핑
+    environment:
+      # 유레카 서버는 자신을 유레카에 등록하거나 레지스트리를 가져오지 않도록 설정
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+    networks:
+      - my-msa-network
+
+  # 2.2. API 게이트웨이
+  api-gateway:
+    build:
+      context: ./api-gateway # API 게이트웨이 프로젝트의 경로
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000" # 게이트웨이 포트 매핑
+    environment:
+      # 게이트웨이가 유레카 서버를 찾을 때, 도커 네트워크 내 서비스 이름으로 접근
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - eureka-server # 유레카 서버가 먼저 시작되도록 의존성 설정
+    networks:
+      - my-msa-network
+
+  # --- 3. 코어 비즈니스 서비스들 ---
+
+  # 3.1. Auth Service
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - DB_URL=jdbc:mysql://mysql-db-auth:3306/auth_db?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+      - DB_USERNAME=${AUTH_DB_USER}     # .env 파일에서 가져옴
+      - DB_PASSWORD=${AUTH_DB_PASSWORD} # .env 파일에서 가져옴
+      - JWT_SECRET=${JWT_SECRET} # .env 파일에서 가져옴
+    depends_on:
+      - eureka-server
+      - mysql-db-auth
+    networks:
+      - my-msa-network
+
+  # 3.2. Order Service
+#  order-service:
+#    build:
+#      context: ./order-service-project
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8082:8082"
+#    environment:
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+#      - SPRING_DATA_MONGODB_URI=mongodb://${ORDER_MONGO_USERNAME}:${ORDER_MONGO_PASSWORD}@mongodb-order:27017/${ORDER_MONGO_DATABASE}?authSource=admin # .env 파일에서 가져옴
+#    depends_on:
+#      - eureka-server
+#      - mongodb-order
+#    networks:
+#      - my-msa-network
+
+  # 3.3. Menu Service
+#  menu-service:
+#    build:
+#      context: ./menu-service-project
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8084:8084"
+#    environment:
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+#      - DB_URL=jdbc:mysql://mysql-db-menu:3306/menu_db?useSSL=false&serverTimezone=Asia/Seoul
+#      - DB_USERNAME=${MENU_DB_USER}
+#      - DB_PASSWORD=${MENU_DB_PASSWORD}
+#    depends_on:
+#      - eureka-server
+#      - mysql-db-menu
+#    networks:
+#      - my-msa-network
+
+  # 3.4. Admin Service
+  admin-service:
+    build:
+      context: ./admin-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - DB_URL=jdbc:mysql://mysql-db-admin:3306/admin_db?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+      - DB_USERNAME=${ADMIN_DB_USER}
+      - DB_PASSWORD=${ADMIN_DB_PASSWORD}
+      - FILE_UPLOAD_DIR=/app/uploads
+      # - JWT_SECRET=${JWT_SECRET_ADMIN} # Admin도 JWT 사용 시 주석 해제 및 .env에 변수 추가
+    depends_on:
+      - eureka-server
+      - mysql-db-admin
+    networks:
+      - my-msa-network
+
+  # 3.5. Chatbot Service (클라이언트 챗봇)
+#  chatbot-service:
+#    build:
+#      context: ./chatbot-service
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8085:8085" # Chatbot Service 포트 (다른 서비스와 중복되지 않게)
+#    environment:
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+#      # 챗봇 서비스가 다른 서비스의 API를 호출해야 한다면 여기에 추가 설정이 필요할 수 있습니다.
+#      # 예: MENU_SERVICE_URL=http://menu-service:8084/api/menu
+#    depends_on:
+#      - eureka-server
+#      # 챗봇 서비스가 메뉴, 매장 정보 등을 조회하므로 해당 서비스들에 대한 의존성도 고려할 수 있음
+#      # - menu-service
+#      # - admin-service
+#    networks:
+#      - my-msa-network
+
+# --- 4. 데이터 영속성을 위한 볼륨 정의 ---
+volumes:
+  mysql-data-auth:
+  mysql-data-admin:
+  mysql-data-menu:
+  mongodb-data-order: # MongoDB용 볼륨 추가
+
+# --- 5. 모든 서비스가 통신할 수 있는 사용자 정의 네트워크 ---
+networks:
+  my-msa-network:
+    driver: bridge
