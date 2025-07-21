@@ -1,5 +1,6 @@
 package com.samnammae.auth_service.service;
 
+import com.samnammae.auth_service.client.AdminServiceFeignClient;
 import com.samnammae.auth_service.domain.token.RefreshToken;
 import com.samnammae.auth_service.domain.token.RefreshTokenRepository;
 import com.samnammae.auth_service.domain.user.User;
@@ -7,11 +8,14 @@ import com.samnammae.auth_service.domain.user.UserRepository;
 import com.samnammae.auth_service.dto.request.LoginRequest;
 import com.samnammae.auth_service.dto.request.SignUpRequest;
 import com.samnammae.auth_service.dto.response.LoginResponse;
+import com.samnammae.auth_service.dto.response.StoreSimpleResponse;
 import com.samnammae.auth_service.jwt.JwtUtil;
 import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
+import com.samnammae.common.response.ApiResponse;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,8 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.Optional;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +35,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final AdminServiceFeignClient adminServiceFeignClient;
 
     // 회원가입
     public void signup(SignUpRequest request) {
@@ -64,30 +70,37 @@ public class AuthService {
             throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
 
+        // Feign Client를 사용해 admin 서비스로부터 매장 목록 조회
+        List<Long> storeIds = new ArrayList<>();
+        try {
+            ApiResponse<List<StoreSimpleResponse>> response = adminServiceFeignClient.getStoresByUserId(user.getId());
+            if (response.getCode() == HttpStatus.OK.value()) {
+                List<StoreSimpleResponse> stores = response.getData();
+                for (StoreSimpleResponse store : stores) {
+                    storeIds.add(store.storeId());
+                }
+            }
+        } catch (Exception e) {
+            // admin 서비스 호출 실패 시 빈 리스트로 토큰 생성
+        }
+
         Instant now = Instant.now();
         Date issuedAt = Date.from(now);
         Date expiresAtDate = Date.from(now.plusMillis(jwtUtil.getRefreshTokenValidityInMs()));
         LocalDateTime expiresAtLocal = LocalDateTime.ofInstant(expiresAtDate.toInstant(), ZoneId.systemDefault());
 
-        // JWT 토큰 생성
-        String accessToken = jwtUtil.generateAccessToken(user, issuedAt, expiresAtDate);
+        // JWT 토큰 생성 (매장 ID 목록을 페이로드에 포함)
+        String accessToken = jwtUtil.generateAccessToken(user, storeIds, issuedAt, expiresAtDate);
         String refreshToken = jwtUtil.generateRefreshToken(user, issuedAt, expiresAtDate);
 
-        // 기존 토큰 있으면 업데이트, 없으면 새로 저장
-        Optional<RefreshToken> existingToken = refreshTokenRepository.findByUserIdAndToken(user.getId(), refreshToken);
-
-        if (existingToken.isPresent()) {
-            existingToken.get().updateToken(refreshToken, expiresAtLocal);
-        } else {
-            refreshTokenRepository.save(
-                    RefreshToken.builder()
-                            .userId(user.getId())
-                            .token(refreshToken)
-                            .expiresAt(expiresAtLocal)
-                            .createdAt(LocalDateTime.now())
-                            .build()
-            );
-        }
+        refreshTokenRepository.save(
+                RefreshToken.builder()
+                        .userId(user.getId())
+                        .token(refreshToken) // 방금 생성한 새 리프레시 토큰
+                        .expiresAt(expiresAtLocal)
+                        .createdAt(LocalDateTime.now())
+                        .build()
+        );
 
         return new LoginResponse(accessToken, refreshToken);
     }
