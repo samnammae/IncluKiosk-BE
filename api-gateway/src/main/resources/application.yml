@@ -33,14 +33,12 @@ spring:
             cors-configurations:
               '[/**]': # 모든 경로에 적용
                 allowedOrigins:
-                  # 프론트엔드 개발 서버의 정확한 Origin을 여기에 나열합니다.
-                  # 일반적으로 사용하는 포트들을 예시로 들었습니다.
-                  # 실제 프론트엔드 개발 서버의 URL을 확인하여 정확히 입력해주세요.
                   - "http://localhost:3000" # React, Vue.js 등의 기본 포트
                   - "http://localhost:4200" # Angular 기본 포트
                   - "http://localhost:5173" # Vite (React, Vue) 등의 포트
                   - "http://127.0.0.1:3000" # localhost 대신 127.0.0.1 사용하는 경우
-                  # 만약 실제 프론트엔드 배포 도메인이 있다면, 나중에 추가합니다.
+                  - "http://localhost:8000" # API 게이트웨이 자체의 포트
+                  - "http://inclukiosk-fe.s3-website.ap-northeast-2.amazonaws.com/"
                   # 예: - "https://your-inclukiosk-frontend.com"
                 allowedMethods:
                   - GET

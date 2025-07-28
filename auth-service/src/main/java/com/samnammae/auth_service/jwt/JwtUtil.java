@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.List;
 
 @Component
 public class JwtUtil {
@@ -32,11 +33,12 @@ public class JwtUtil {
     }
 
     // 엑세스 토큰 발행
-    public String generateAccessToken(User user, Date issuedAt, Date expiresAt) {
+    public String generateAccessToken(User user, List<Long> storeIds, Date issuedAt, Date expiresAt) {
         return Jwts.builder()
                 .setHeaderParam(Header.TYPE, Header.JWT_TYPE)
                 .setSubject(String.valueOf(user.getId()))
                 .claim("userEmail", user.getEmail())
+                .claim("storeIds", storeIds)
                 .setIssuedAt(issuedAt)
                 .setExpiration(expiresAt)
                 .signWith(secretKey)
