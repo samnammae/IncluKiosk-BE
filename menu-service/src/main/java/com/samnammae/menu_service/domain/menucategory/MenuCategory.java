@@ -24,4 +24,9 @@ public class MenuCategory {
 
     @Column(nullable = false)
     private int displayOrder;
+
+    public void update(String name, int displayOrder) {
+        this.name = name;
+        this.displayOrder = displayOrder;
+    }
 }
