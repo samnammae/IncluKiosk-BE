@@ -17,6 +17,12 @@ public enum ErrorCode {
     FORBIDDEN_ACCESS(403, "접근 권한이 없습니다."),
     FILE_DELETE_FAILED(500, "파일 삭제에 실패했습니다."),
 
+    // Menu Service
+    STORE_ACCESS_DENIED(403, "접근 권한이 없는 매장입니다."),
+    CATEGORY_ID_EMPTY(400, "수정할 카테고리 ID가 없습니다."),
+    CATEGORY_NOT_FOUND(404, "해당 카테고리를 찾을 수 없습니다."),
+    CATEGORY_ACCESS_DENIED(403, "해당 카테고리에 대한 권한이 없습니다."),
+
     // Api Gateway
     INTERNAL_SERVER_ERROR(500, "서버 내부 오류가 발생했습니다."),
     EXPIRED_TOKEN(401, "토큰이 만료되었습니다."),;
