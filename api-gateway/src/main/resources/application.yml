@@ -27,6 +27,14 @@ spring:
                 - Path=/api/admin/**
               filters:
                 - AuthorizationHeader
+
+            # Menu 서비스 라우팅 규칙
+            - id: menu-service-route
+              uri: lb://menu-service # 로드 밸런싱을 통해 menu-service로
+              predicates:
+                - Path=/api/menu/**
+              filters:
+                - AuthorizationHeader
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
           globalcors:
@@ -44,6 +52,7 @@ spring:
                   - GET
                   - POST
                   - PUT
+                  - PATCH
                   - DELETE
                   - OPTIONS
                 allowedHeaders:

@@ -57,24 +57,21 @@ class AuthorizationHeaderGatewayFilterFactoryTest {
         String token = "valid-jwt-token";
         String userId = "testUser";
         String userEmail = "test@example.com";
+        String storeIds = "1,2,3"; // 추가
 
-        // MockServerHttpRequest: 테스트용 가짜 HTTP 요청 객체 생성
         MockServerHttpRequest request = MockServerHttpRequest
                 .get("/test")
                 .header("Authorization", "Bearer " + token)
                 .build();
 
-        // MockServerWebExchange: 가짜 요청을 포함하는 교환(exchange) 객체 생성
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        // Claims: JWT 토큰에서 추출될 정보를 담는 Mock 객체 생성
         Claims claims = new DefaultClaims();
         claims.setSubject(userId);
         claims.put("userEmail", userEmail);
+        claims.put("storeIds", storeIds); // 추가
 
-        // jwtUtil.validateAndParseClaims 메소드가 호출되면, 준비된 claims 객체를 반환하도록 설정
         when(jwtUtil.validateAndParseClaims(token)).thenReturn(claims);
-        // 이 테스트는 filterChain.filter()가 호출되므로, 해당 호출에 대한 스터빙을 설정합니다.
         when(filterChain.filter(any(ServerWebExchange.class))).thenReturn(Mono.empty());
 
         // when: 테스트 대상 메소드 실행
@@ -82,14 +79,16 @@ class AuthorizationHeaderGatewayFilterFactoryTest {
 
         // then: 결과 검증
         StepVerifier.create(result)
-                .verifyComplete(); // Mono가 성공적으로 완료되는지 검증
+                .verifyComplete();
 
-        // filterChain.filter가 정확히 1번 호출되었는지 검증
+        // 헤더 검증
         verify(filterChain, times(1)).filter(argThat(ex -> {
-            // 다음 필터로 넘어가는 요청(request)에 X-USER-ID와 X-USER-EMAIL 헤더가 올바르게 추가되었는지 검증
             String addedUserId = ex.getRequest().getHeaders().getFirst("X-USER-ID");
             String addedUserEmail = ex.getRequest().getHeaders().getFirst("X-USER-EMAIL");
-            return userId.equals(addedUserId) && userEmail.equals(addedUserEmail);
+            String addedStoreIds = ex.getRequest().getHeaders().getFirst("X-MANAGED-STORE-IDS");
+            return userId.equals(addedUserId) &&
+                    userEmail.equals(addedUserEmail) &&
+                    storeIds.equals(addedStoreIds); // 추가
         }));
     }
 

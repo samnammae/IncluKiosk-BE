@@ -51,7 +51,7 @@ public class MenuCategoryController {
 
     @PatchMapping("/{storeId}/category")
     @Operation(summary = "메뉴 카테고리 수정", description = "특정 매장의 메뉴 카테고리 목록을 일괄 수정합니다. (순서 변경 등)")
-    public ApiResponse<Void> updateCategories(
+    public ApiResponse<List<Long>> updateCategories(
             @PathVariable Long storeId,
             @RequestHeader("X-MANAGED-STORE-IDS") String managedStoreIds,
             @RequestBody List<MenuCategoryUpdateRequestDto> requestDto) {
@@ -61,7 +61,7 @@ public class MenuCategoryController {
         // 카테고리 목록 수정
         List<Long> updatedCategoryIds = menuCategoryService.updateCategories(storeId, requestDto);
 
-        return ApiResponse.success(null);
+        return ApiResponse.success(updatedCategoryIds);
     }
 
     @DeleteMapping("/{storeId}/category/{categoryId}")
