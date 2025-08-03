@@ -46,10 +46,12 @@ public class AuthorizationHeaderGatewayFilterFactory extends AbstractGatewayFilt
                 Claims claims = jwtUtil.validateAndParseClaims(token);
                 String userId = claims.getSubject();
                 String userEmail = claims.get("userEmail", String.class);
+                String storeIds = claims.get("storeIds", String.class);
 
                 ServerHttpRequest newRequest = request.mutate()
                         .header("X-USER-ID", userId)
                         .header("X-USER-EMAIL", userEmail)
+                        .header("X-MANAGED-STORE-IDS", storeIds)
                         .build();
 
                 return chain.filter(exchange.mutate().request(newRequest).build());
