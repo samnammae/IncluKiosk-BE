@@ -22,6 +22,14 @@ public enum ErrorCode {
     CATEGORY_ID_EMPTY(400, "수정할 카테고리 ID가 없습니다."),
     CATEGORY_NOT_FOUND(404, "해당 카테고리를 찾을 수 없습니다."),
     CATEGORY_ACCESS_DENIED(403, "해당 카테고리에 대한 권한이 없습니다."),
+    MENU_CATEGORY_NOT_FOUND(404, "메뉴 카테고리를 찾을 수 없습니다."),
+    MENU_NOT_FOUND(404, "메뉴를 찾을 수 없습니다."),
+    MENU_STORE_MISMATCH(403, "해당 매장의 메뉴가 아닙니다."),
+    INVALID_OPTION_CATEGORY_FORMAT( 400, "옵션 카테고리 형식이 잘못되었습니다."),
+    INVALID_FILE(400, "업로드할 파일이 비어있습니다."),
+    INVALID_FILE_NAME(400, "파일 이름이 없습니다."),
+    FILE_IO_ERROR(500, "파일 입출력 오류가 발생했습니다."),
+    S3_SERVICE_ERROR(500, "S3 서비스 오류가 발생했습니다."),
 
     // Api Gateway
     INTERNAL_SERVER_ERROR(500, "서버 내부 오류가 발생했습니다."),
