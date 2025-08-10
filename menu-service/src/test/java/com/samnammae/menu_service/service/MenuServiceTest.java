@@ -71,7 +71,7 @@ class MenuServiceTest {
                 .id(1L)
                 .storeId(1L)
                 .name("사이즈")
-                .type(OptionCategoryType.SINGLE_CHOICE)
+                .type(OptionCategoryType.SINGLE)
                 .isRequired(true)
                 .build();
 
