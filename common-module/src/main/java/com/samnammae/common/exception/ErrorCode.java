@@ -30,6 +30,11 @@ public enum ErrorCode {
     INVALID_FILE_NAME(400, "파일 이름이 없습니다."),
     FILE_IO_ERROR(500, "파일 입출력 오류가 발생했습니다."),
     S3_SERVICE_ERROR(500, "S3 서비스 오류가 발생했습니다."),
+    OPTION_CATEGORY_ID_DUPLICATED(400, "이미 존재하는 옵션 카테고리 ID입니다."),
+    OPTION_CATEGORY_NOT_FOUND(404, "옵션 카테고리를 찾을 수 없습니다."),
+    OPTION_NOT_FOUND(404, "옵션을 찾을 수 없습니다."),
+    OPTION_CATEGORY_TYPE_MISMATCH(400, "옵션 카테고리 타입이 일치하지 않습니다."),
+    OPTION_CATEGORY_NAME_DUPLICATED(400, "이미 존재하는 옵션 카테고리 이름입니다."),
 
     // Api Gateway
     INTERNAL_SERVER_ERROR(500, "서버 내부 오류가 발생했습니다."),
