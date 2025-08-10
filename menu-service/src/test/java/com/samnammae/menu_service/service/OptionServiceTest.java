@@ -188,13 +188,13 @@ class OptionServiceTest {
     void deleteOption_Success() {
         // Given
         when(optionCategoryRepository.findByIdAndStoreId(categoryId, storeId)).thenReturn(Optional.of(testCategory));
-        doNothing().when(optionRepository).deleteById(optionId);
 
         // When
         optionService.deleteOption(storeId, categoryId, optionId);
 
         // Then
-        verify(optionRepository).deleteById(optionId);
+        assertThat(testCategory.getOptions()).isEmpty();
+        verify(optionCategoryRepository).findByIdAndStoreId(categoryId, storeId);
     }
 
     @Test
