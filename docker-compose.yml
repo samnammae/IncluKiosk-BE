@@ -141,6 +141,9 @@ services:
       - DB_URL=jdbc:mysql://mysql-db-menu:3306/menu_db?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
       - DB_USERNAME=${MENU_DB_USER}
       - DB_PASSWORD=${MENU_DB_PASSWORD}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
     depends_on:
       - eureka-server
       - mysql-db-menu
