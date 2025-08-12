@@ -9,8 +9,11 @@ import com.samnammae.menu_service.dto.request.MenuCategoryCreateRequestDto;
 import com.samnammae.menu_service.dto.request.MenuCategoryUpdateRequestDto;
 import com.samnammae.menu_service.dto.response.MenuCategoryResponseDto;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,18 +26,42 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class MenuCategoryService {
 
+    private static final Logger log = LoggerFactory.getLogger(MenuCategoryService.class);
+
     private final MenuCategoryRepository menuCategoryRepository;
     private final MenuRepository menuRepository;
 
     // 매장 접근 권한 검증
     public void validateStoreAccess(Long storeId, String managedStoreIds) {
-        List<Long> accessibleStoreIds = Arrays.stream(managedStoreIds.split(","))
-                .map(Long::parseLong)
-                .toList();
+        // --- 상세 로깅 추가 ---
+        log.info("권한 검증 시작: storeId={}, managedStoreIds='{}'", storeId, managedStoreIds);
 
-        if (!accessibleStoreIds.contains(storeId)) {
+        // managedStoreIds가 비어있거나 null인 경우를 방어
+        if (!StringUtils.hasText(managedStoreIds)) {
+            log.error("권한 검증 실패: X-MANAGED-STORE-IDS 헤더가 비어있거나 null입니다.");
             throw new CustomException(ErrorCode.STORE_ACCESS_DENIED);
         }
+
+        List<Long> accessibleStoreIds;
+        try {
+            // 쉼표로 구분된 문자열을 Long 리스트로 변환
+            accessibleStoreIds = Arrays.stream(managedStoreIds.split(","))
+                    .map(String::trim) // 각 ID의 앞뒤 공백 제거
+                    .map(Long::parseLong)
+                    .toList();
+        } catch (NumberFormatException e) {
+            log.error("권한 검증 실패: managedStoreIds '{}' 파싱 중 오류 발생.", managedStoreIds, e);
+            throw new CustomException(ErrorCode.STORE_ACCESS_DENIED);
+        }
+
+        log.debug("파싱된 접근 가능 매장 ID 목록: {}", accessibleStoreIds);
+
+        if (!accessibleStoreIds.contains(storeId)) {
+            log.warn("권한 검증 실패: 사용자(매장목록:{})는 storeId:{}에 접근할 수 없습니다.", accessibleStoreIds, storeId);
+            throw new CustomException(ErrorCode.STORE_ACCESS_DENIED);
+        }
+
+        log.info("권한 검증 성공: storeId={}", storeId);
     }
 
     // 카테고리 생성
