@@ -97,5 +97,10 @@ jwt:
 
 logging:
   level:
+    # 스프링 시큐리티의 모든 동작을 추적
+    org.springframework.security: TRACE
+    # 게이트웨이의 라우팅, 필터 동작을 추적
+    org.springframework.cloud.gateway: TRACE
+    # 기존 CORS 및 웹서버 로그도 유지
     org.springframework.web.cors: TRACE
     org.springframework.web.server: TRACE
