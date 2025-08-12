@@ -94,3 +94,8 @@ springdoc:
 
 jwt:
   secret: ${JWT_SECRET}
+
+logging:
+  level:
+    org.springframework.web.cors: TRACE
+    org.springframework.web.server: TRACE
