@@ -104,3 +104,4 @@ logging:
     # 기존 CORS 및 웹서버 로그도 유지
     org.springframework.web.cors: TRACE
     org.springframework.web.server: TRACE
+    com.samnammae.api_gateway.filter: TRACE
