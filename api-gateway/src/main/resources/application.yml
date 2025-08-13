@@ -35,8 +35,8 @@ spring:
                 - Path=/api/menu/**
               filters:
                 - AuthorizationHeader
-          default-filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+#          default-filters:
+#            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
           globalcors:
             cors-configurations:
               '[/**]': # 모든 경로에 적용
@@ -46,13 +46,13 @@ spring:
                   - "http://localhost:5173" # Vite (React, Vue) 등의 포트
                   - "http://127.0.0.1:3000" # localhost 대신 127.0.0.1 사용하는 경우
                   - "http://localhost:8000" # API 게이트웨이 자체의 포트
-                  - "http://inclukiosk-fe.s3-website.ap-northeast-2.amazonaws.com/"
-                  - "https://dap3hz5p3144z.cloudfront.net/"
-                  - "http://ec2-3-36-56-69.ap-northeast-2.compute.amazonaws.com:3000/"
-                  - "inclukiosk.com"
+                  - "http://inclukiosk-fe.s3-website.ap-northeast-2.amazonaws.com"
+                  - "http://dap3hz5p3144z.cloudfront.net"
+                  - "https://dap3hz5p3144z.cloudfront.net"
+                  - "http://ec2-3-36-56-69.ap-northeast-2.compute.amazonaws.com:3000"
                   - "http://inclukiosk.com"
                   - "https://inclukiosk.com"
-                  - "www.inclukiosk.com"
+                  - "http://www.inclukiosk.com"
                   - "https://www.inclukiosk.com"
                 allowedMethods:
                   - GET
@@ -61,11 +61,7 @@ spring:
                   - PATCH
                   - DELETE
                   - OPTIONS
-                allowedHeaders:
-                  - Authorization
-                  - Content-Type
-                  - X-Requested-With
-                  - Accept
+                allowedHeaders: "*"
                 allowCredentials: true # <--- 자격 증명(쿠키, 인증 헤더) 허용
                 maxAge: 3600
 
