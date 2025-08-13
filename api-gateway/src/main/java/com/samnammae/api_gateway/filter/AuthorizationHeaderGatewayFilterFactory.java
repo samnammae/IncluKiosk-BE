@@ -78,6 +78,9 @@ public class AuthorizationHeaderGatewayFilterFactory extends AbstractGatewayFilt
                         .header("X-MANAGED-STORE-IDS", storeIds)
                         .build();
 
+                logger.info("Authorization Filter End - RequestId: {}, Method: {}, Path: {}, RemoteAddress: {}",
+                        requestId, method, requestPath, request.getRemoteAddress());
+
                 return chain.filter(exchange.mutate().request(newRequest).build());
 
             } catch (CustomException e) {
