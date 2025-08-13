@@ -37,6 +37,11 @@ public class AuthorizationHeaderGatewayFilterFactory extends AbstractGatewayFilt
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
             String requestPath = request.getPath().value();
+            String requestId = request.getId();
+            String method = request.getMethod().name();
+
+            logger.info("=== Authorization Filter Start === RequestId: {}, Method: {}, Path: {}, RemoteAddress: {}",
+                    requestId, method, requestPath, request.getRemoteAddress());
 
             // 'Authorization' 헤더 존재 여부 확인
             if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
