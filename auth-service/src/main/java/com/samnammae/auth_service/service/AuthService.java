@@ -59,21 +59,22 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    // 로그인
-    public LoginResponse login(LoginRequest request) {
-        // 이메일로 사용자 조회
-        User user = userRepository.findByEmail(request.getEmail())
+    // DB 조회 분리
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
 
-        // 비밀번호 일치 여부 확인
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new CustomException(ErrorCode.INVALID_PASSWORD);
-        }
+    // 리프레시 토큰 저장을 별도 분리
+    public void saveRefreshToken(RefreshToken refreshToken) {
+        refreshTokenRepository.save(refreshToken);
+    }
 
-        // Feign Client를 사용해 admin 서비스로부터 매장 목록 조회
+    // 외부 서비스 호출 로직 분리
+    public List<Long> getStoreIds(Long userId) {
         List<Long> storeIds = new ArrayList<>();
         try {
-            ApiResponse<List<StoreSimpleResponse>> response = adminServiceFeignClient.getStoresByUserId(user.getId());
+            ApiResponse<List<StoreSimpleResponse>> response = adminServiceFeignClient.getStoresByUserId(userId);
             if (response.getCode() == HttpStatus.OK.value()) {
                 List<StoreSimpleResponse> stores = response.getData();
                 for (StoreSimpleResponse store : stores) {
@@ -81,26 +82,43 @@ public class AuthService {
                 }
             }
         } catch (Exception e) {
-            // admin 서비스 호출 실패 시 빈 리스트로 토큰 생성
+            // admin 서비스 호출 실패 시 빈 리스트 반환
+            System.out.println("Admin service call failed: " + e.getMessage());
+        }
+        return storeIds;
+    }
+
+    // 로그인 - 각 단계별로 DB 연산 분리
+    public LoginResponse login(LoginRequest request) {
+        // 1. 사용자 조회 (DB 커넥션 즉시 반환)
+        User user = getUserByEmail(request.getEmail());
+
+        // 2. 비밀번호 확인
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
         }
 
+        // 3. 외부 서비스 호출 (DB와 무관)
+        List<Long> storeIds = getStoreIds(user.getId());
+
+        // 4. JWT 토큰 생성
         Instant now = Instant.now();
         Date issuedAt = Date.from(now);
         Date expiresAtDate = Date.from(now.plusMillis(jwtUtil.getRefreshTokenValidityInMs()));
         LocalDateTime expiresAtLocal = LocalDateTime.ofInstant(expiresAtDate.toInstant(), ZoneId.systemDefault());
 
-        // JWT 토큰 생성 (매장 ID 목록을 페이로드에 포함)
         String accessToken = jwtUtil.generateAccessToken(user, storeIds, issuedAt, expiresAtDate);
         String refreshToken = jwtUtil.generateRefreshToken(user, issuedAt, expiresAtDate);
 
-        refreshTokenRepository.save(
-                RefreshToken.builder()
-                        .userId(user.getId())
-                        .token(refreshToken) // 방금 생성한 새 리프레시 토큰
-                        .expiresAt(expiresAtLocal)
-                        .createdAt(LocalDateTime.now())
-                        .build()
-        );
+        // 5. 리프레시 토큰 저장 (새로운 트랜잭션으로 빠르게 처리)
+        RefreshToken refreshTokenEntity = RefreshToken.builder()
+                .userId(user.getId())
+                .token(refreshToken)
+                .expiresAt(expiresAtLocal)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        saveRefreshToken(refreshTokenEntity);
 
         return new LoginResponse(accessToken, refreshToken);
     }
