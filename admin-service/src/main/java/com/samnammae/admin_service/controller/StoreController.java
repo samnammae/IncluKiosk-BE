@@ -47,7 +47,7 @@ public class StoreController {
     ) throws InterruptedException {
         List<StoreSimpleResponse> storeList = storeService.getStoreList(userId);
 
-        TimeUnit.SECONDS.sleep(1);
+        TimeUnit.SECONDS.sleep(2);
 
         return ApiResponse.success(storeList);
     }
