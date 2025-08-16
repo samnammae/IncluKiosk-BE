@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/admin/store")
@@ -43,8 +44,11 @@ public class StoreController {
     @Operation(summary = "매장 목록 조회", description = "관리자가 등록한 매장들의 간단한 정보를 조회합니다.")
     public ApiResponse<List<StoreSimpleResponse>> getStoreList(
             @RequestHeader("X-User-Id") Long userId
-    ) {
+    ) throws InterruptedException {
         List<StoreSimpleResponse> storeList = storeService.getStoreList(userId);
+
+        TimeUnit.SECONDS.sleep(5);
+
         return ApiResponse.success(storeList);
     }
 
