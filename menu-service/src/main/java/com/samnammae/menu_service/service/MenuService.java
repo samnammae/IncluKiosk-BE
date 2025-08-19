@@ -12,6 +12,7 @@ import com.samnammae.menu_service.domain.optioncategory.OptionCategory;
 import com.samnammae.menu_service.domain.optioncategory.OptionCategoryRepository;
 import com.samnammae.menu_service.dto.request.MenuCreateRequestDto;
 import com.samnammae.menu_service.dto.request.MenuUpdateRequestDto;
+import com.samnammae.menu_service.dto.response.MenuDetailResponseDto;
 import com.samnammae.menu_service.dto.response.MenuListResponseDto;
 import com.samnammae.menu_service.dto.response.MenuResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -143,6 +144,18 @@ public class MenuService {
         }
 
         menuRepository.delete(menu);
+    }
+
+    public MenuDetailResponseDto getMenuDetail(Long storeId, Long menuId) {
+        Menu menu = menuRepository.findByIdWithDetails(menuId)
+                .orElseThrow(() -> new CustomException(ErrorCode.MENU_NOT_FOUND));
+
+        // 매장 소유권 확인
+        if (!menu.getStoreId().equals(storeId)) {
+            throw new CustomException(ErrorCode.MENU_STORE_MISMATCH);
+        }
+
+        return MenuDetailResponseDto.from(menu);
     }
 
     // JSON 문자열을 파싱하여 OptionCategory Set을 반환하는 헬퍼 메서드
