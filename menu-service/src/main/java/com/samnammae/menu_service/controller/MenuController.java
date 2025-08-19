@@ -3,6 +3,7 @@ package com.samnammae.menu_service.controller;
 import com.samnammae.common.response.ApiResponse;
 import com.samnammae.menu_service.dto.request.MenuCreateRequestDto;
 import com.samnammae.menu_service.dto.request.MenuUpdateRequestDto;
+import com.samnammae.menu_service.dto.response.MenuDetailResponseDto;
 import com.samnammae.menu_service.dto.response.MenuListResponseDto;
 import com.samnammae.menu_service.service.MenuService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -84,5 +85,15 @@ public class MenuController {
         menuService.deleteMenu(storeId, menuId);
 
         return ApiResponse.success(null);
+    }
+
+    @GetMapping("/{storeId}/{menuId}")
+    @Operation(summary = "메뉴 상세 조회", description = "특정 메뉴의 상세 정보를 조회합니다.")
+    public ApiResponse<MenuDetailResponseDto> getMenuDetail(
+            @PathVariable Long storeId,
+            @PathVariable Long menuId) {
+        MenuDetailResponseDto response = menuService.getMenuDetail(storeId, menuId);
+
+        return ApiResponse.success(response);
     }
 }
