@@ -24,7 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "http://www.inclukiosk.com",
                         "https://www.inclukiosk.com"
                 ) // 허용할 프론트 주소
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }
