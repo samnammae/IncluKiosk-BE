@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: menu-service
+    name: order-service
 
   config:
     import: optional:classpath:application-secret.yml
