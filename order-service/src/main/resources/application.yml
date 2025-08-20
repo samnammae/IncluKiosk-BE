@@ -1,0 +1,32 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: order-service
+
+  config:
+    import: optional:classpath:application-secret.yml
+
+  datasource:
+    uri: ${MONGO_URI}
+    database: ${MONGO_DATABASE}
+
+springdoc:
+  api-docs:
+    path: /api/order/v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    csrf:
+      enabled: false
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}

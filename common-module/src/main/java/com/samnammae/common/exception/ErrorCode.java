@@ -36,6 +36,12 @@ public enum ErrorCode {
     OPTION_CATEGORY_TYPE_MISMATCH(400, "옵션 카테고리 타입이 일치하지 않습니다."),
     OPTION_CATEGORY_NAME_DUPLICATED(400, "이미 존재하는 옵션 카테고리 이름입니다."),
 
+    // Order Service
+    ORDER_NOT_FOUND(404, "주문을 찾을 수 없습니다."),
+    ORDER_TOTAL_AMOUNT_MISMATCH(400, "주문 총 금액이 일치하지 않습니다."),
+    ORDER_ITEM_PRICE_MISMATCH(400, "주문 아이템 가격이 일치하지 않습니다."),
+    INVALID_OPTION_ID(400, "유효하지 않은 옵션 ID입니다."),
+
     // Api Gateway
     INTERNAL_SERVER_ERROR(500, "서버 내부 오류가 발생했습니다."),
     EXPIRED_TOKEN(401, "토큰이 만료되었습니다."),;

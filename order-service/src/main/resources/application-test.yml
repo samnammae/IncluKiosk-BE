@@ -1,0 +1,9 @@
+spring:
+  data:
+    mongodb:
+      database: test_order_db
+      # URI 없이 두면 자동으로 embedded MongoDB 사용
+
+logging:
+  level:
+    org.springframework.data.mongodb: DEBUG

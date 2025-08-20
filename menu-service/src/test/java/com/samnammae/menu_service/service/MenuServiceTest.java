@@ -14,6 +14,7 @@ import com.samnammae.menu_service.domain.optioncategory.OptionCategoryRepository
 import com.samnammae.menu_service.domain.optioncategory.OptionCategoryType;
 import com.samnammae.menu_service.dto.request.MenuCreateRequestDto;
 import com.samnammae.menu_service.dto.request.MenuUpdateRequestDto;
+import com.samnammae.menu_service.dto.response.MenuDetailResponseDto;
 import com.samnammae.menu_service.dto.response.MenuListResponseDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +25,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -340,6 +344,57 @@ class MenuServiceTest {
         assertEquals(1L, result);
         verify(optionCategoryRepository, never()).findAllById(any());
         verify(objectMapper, never()).readValue(anyString(), any(TypeReference.class));
+    }
+
+    @Test
+    @DisplayName("메뉴 상세 조회 - 성공")
+    void getMenuDetail_Success() {
+        // Given
+        Long storeId = 1L;
+        Long menuId = 1L;
+        when(menuRepository.findByIdWithDetails(menuId)).thenReturn(Optional.of(testMenu));
+
+        // When
+        MenuDetailResponseDto result = menuService.getMenuDetail(storeId, menuId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(testMenu.getId(), result.getMenuId());
+        assertEquals(testMenu.getName(), result.getMenuName());
+        assertEquals(testMenu.getPrice(), result.getBasePrice());
+        assertEquals(testMenu.getDescription(), result.getDescription());
+        assertEquals(testMenu.getImageUrl(), result.getImageUrl());
+        assertEquals(testMenu.isSoldOut(), result.isSoldOut());
+        assertNotNull(result.getOptionCategories());
+        verify(menuRepository).findByIdWithDetails(menuId);
+    }
+
+    @Test
+    @DisplayName("메뉴 상세 조회 - 메뉴 없음")
+    void getMenuDetail_MenuNotFound() {
+        // Given
+        Long storeId = 1L;
+        Long menuId = 999L;
+        when(menuRepository.findByIdWithDetails(menuId)).thenReturn(Optional.empty());
+
+        // When & Then
+        CustomException exception = assertThrows(CustomException.class,
+                () -> menuService.getMenuDetail(storeId, menuId));
+        assertEquals(ErrorCode.MENU_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("메뉴 상세 조회 - 매장 불일치")
+    void getMenuDetail_StoreMismatch() {
+        // Given
+        Long wrongStoreId = 2L;
+        Long menuId = 1L;
+        when(menuRepository.findByIdWithDetails(menuId)).thenReturn(Optional.of(testMenu));
+
+        // When & Then
+        CustomException exception = assertThrows(CustomException.class,
+                () -> menuService.getMenuDetail(wrongStoreId, menuId));
+        assertEquals(ErrorCode.MENU_STORE_MISMATCH, exception.getErrorCode());
     }
 
     // 헬퍼 메서드들

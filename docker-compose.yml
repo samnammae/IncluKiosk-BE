@@ -46,19 +46,19 @@ services:
     networks:
       - my-msa-network
 
-  # 1.4. Order Service용 MongoDB 데이터베이스 (MongoDB 사용 시)
-#  mongodb-order:
-#    image: mongo:latest # 최신 MongoDB 공식 이미지 사용
-#    ports:
-#      - "27017:27017" # 호스트 포트 27017을 컨테이너 포트 27017에 매핑
-#    environment:
-#      MONGO_INITDB_ROOT_USERNAME: order_user # MongoDB 사용자 이름
-#      MONGO_INITDB_ROOT_PASSWORD: order_password # MongoDB 사용자 비밀번호
-#      MONGO_INITDB_DATABASE: order_db # Order Service가 사용할 데이터베이스 이름
-#    volumes:
-#      - mongodb-data-order:/data/db # 데이터 영속성을 위한 볼륨 마운트
-#    networks:
-#      - my-msa-network
+  # 1.4. Order Service용 MongoDB 데이터베이스
+  mongodb-order:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${ORDER_MONGO_USERNAME}  # order_user -> 환경변수로 변경
+      MONGO_INITDB_ROOT_PASSWORD: ${ORDER_MONGO_PASSWORD}  # order_password -> 환경변수로 변경
+      MONGO_INITDB_DATABASE: ${ORDER_MONGO_DATABASE}       # order_db -> 환경변수로 변경
+    volumes:
+      - mongodb-data-order:/data/db
+    networks:
+      - my-msa-network
 
   # --- 2. 코어 MSA 인프라 서비스 ---
 
@@ -114,20 +114,20 @@ services:
       - my-msa-network
 
   # 3.2. Order Service
-#  order-service:
-#    build:
-#      context: ./order-service-project
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8082:8082"
-#    environment:
-#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-#      - SPRING_DATA_MONGODB_URI=mongodb://${ORDER_MONGO_USERNAME}:${ORDER_MONGO_PASSWORD}@mongodb-order:27017/${ORDER_MONGO_DATABASE}?authSource=admin # .env 파일에서 가져옴
-#    depends_on:
-#      - eureka-server
-#      - mongodb-order
-#    networks:
-#      - my-msa-network
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_DATA_MONGODB_URI=mongodb://${ORDER_MONGO_USERNAME}:${ORDER_MONGO_PASSWORD}@mongodb-order:27017/${ORDER_MONGO_DATABASE}?authSource=admin
+    depends_on:
+      - eureka-server
+      - mongodb-order
+    networks:
+      - my-msa-network
 
   # 3.3. Menu Service
   menu-service:
