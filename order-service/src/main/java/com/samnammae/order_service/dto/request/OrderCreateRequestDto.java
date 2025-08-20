@@ -1,5 +1,6 @@
 package com.samnammae.order_service.dto.request;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -8,6 +9,7 @@ import java.util.Map;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class OrderCreateRequestDto {
 
     private Long storeId;
@@ -21,6 +23,7 @@ public class OrderCreateRequestDto {
     // items 리스트 안의 객체 구조
     @Getter
     @NoArgsConstructor
+    @AllArgsConstructor
     public static class OrderItemDto {
         private Long menuId;
         private String menuName;
