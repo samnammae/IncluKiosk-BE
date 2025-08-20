@@ -35,6 +35,14 @@ spring:
                 - Path=/api/menu/**
               filters:
                 - AuthorizationHeader
+
+            # Order 서비스 라우팅 규칙
+            - id: order-service-route
+              uri: lb://order-service # 로드 밸런싱을 통해 order-service로
+              predicates:
+                - Path=/api/order/**
+              filters:
+                - AuthorizationHeader
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
           globalcors:
