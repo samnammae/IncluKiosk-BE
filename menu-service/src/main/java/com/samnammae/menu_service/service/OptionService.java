@@ -87,6 +87,8 @@ public class OptionService {
 
         // 옵션 카테고리 정보 업데이트
         category.getOptions().clear();
+        optionCategoryRepository.flush();
+
         List<Option> newOptions = requestDto.getOptions().stream()
                 .map(optionDto -> buildOption(optionDto, category))
                 .toList();
