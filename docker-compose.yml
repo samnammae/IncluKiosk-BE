@@ -162,8 +162,9 @@ services:
       - DB_URL=jdbc:mysql://mysql-db-admin:3306/admin_db?useSSL=false&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
       - DB_USERNAME=${ADMIN_DB_USER}
       - DB_PASSWORD=${ADMIN_DB_PASSWORD}
-      - FILE_UPLOAD_DIR=/app/uploads
-      # - JWT_SECRET=${JWT_SECRET_ADMIN} # Admin도 JWT 사용 시 주석 해제 및 .env에 변수 추가
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET}
     depends_on:
       - eureka-server
       - mysql-db-admin
