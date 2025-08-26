@@ -7,7 +7,7 @@ import com.samnammae.admin_service.dto.response.StoreResponse;
 import com.samnammae.admin_service.dto.response.StoreSimpleResponse;
 import com.samnammae.common.exception.CustomException;
 import com.samnammae.common.exception.ErrorCode;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,11 +16,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class StoreService {
 
     private final StoreRepository storeRepository;
     private final FileStorageService fileStorageService;
+
+    public StoreService(StoreRepository storeRepository,
+                        @Qualifier("s3FileStorage") FileStorageService fileStorageService) {
+        this.storeRepository = storeRepository;
+        this.fileStorageService = fileStorageService;
+    }
 
     // 가게 등록
     public Long createStore(Long ownerId, StoreRequest request) {
@@ -84,19 +89,25 @@ public class StoreService {
 
     // 매장 정보 수정
     public StoreResponse updateStore(Long userId, Long storeId, StoreRequest request) {
-        // 매장 존재 여부 확인
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
-        // 매장 소유자 확인
         if (!store.getOwnerId().equals(userId)) {
             throw new CustomException(ErrorCode.FORBIDDEN_ACCESS);
         }
 
-        // 파일 업로드
-        String mainImgUrl = uploadFile(request.getMainImg());
-        String logoImgUrl = uploadFile(request.getLogoImg());
-        String backgroundUrl = uploadFile(request.getStartBackground());
+        // 기존 파일 URL 백업
+        String oldMainImg = store.getMainImgUrl();
+        String oldLogoImg = store.getLogoImgUrl();
+        String oldBackground = store.getStartBackgroundUrl();
+
+        // 새 파일 업로드 (파일이 제공된 경우만)
+        String newMainImg = request.getMainImg() != null && !request.getMainImg().isEmpty()
+                ? uploadFile(request.getMainImg()) : oldMainImg;
+        String newLogoImg = request.getLogoImg() != null && !request.getLogoImg().isEmpty()
+                ? uploadFile(request.getLogoImg()) : oldLogoImg;
+        String newBackground = request.getStartBackground() != null && !request.getStartBackground().isEmpty()
+                ? uploadFile(request.getStartBackground()) : oldBackground;
 
         // 매장 정보 업데이트
         store.update(
@@ -104,15 +115,28 @@ public class StoreService {
                 request.getPhone(),
                 request.getAddress(),
                 request.getIntroduction(),
-                mainImgUrl,
-                logoImgUrl,
-                backgroundUrl,
+                newMainImg,
+                newLogoImg,
+                newBackground,
                 request.getMainColor(),
                 request.getSubColor(),
                 request.getTextColor()
         );
 
-        return StoreResponse.from(storeRepository.save(store));
+        Store savedStore = storeRepository.save(store);
+
+        // 기존 파일 삭제 (새 파일로 변경된 경우만)
+        if (oldMainImg != null && !oldMainImg.equals(newMainImg)) {
+            fileStorageService.delete(oldMainImg);
+        }
+        if (oldLogoImg != null && !oldLogoImg.equals(newLogoImg)) {
+            fileStorageService.delete(oldLogoImg);
+        }
+        if (oldBackground != null && !oldBackground.equals(newBackground)) {
+            fileStorageService.delete(oldBackground);
+        }
+
+        return StoreResponse.from(savedStore);
     }
 
     // 매장 삭제
