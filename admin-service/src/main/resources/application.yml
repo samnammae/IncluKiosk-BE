@@ -23,6 +23,18 @@ spring:
         format_sql: true
     database-platform: org.hibernate.dialect.MySQL8Dialect
 
+  cloud:
+    aws:
+      credentials:
+        access-key: ${AWS_ACCESS_KEY}
+        secret-key: ${AWS_SECRET_KEY}
+      region:
+        static: ap-northeast-2
+      stack:
+        auto: false
+      s3:
+        bucket: ${AWS_S3_BUCKET}
+
 file:
   upload-dir: ${user.dir}/uploads
 
