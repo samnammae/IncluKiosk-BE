@@ -19,10 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -105,6 +102,30 @@ public class OrderService {
 
         log.info("주문이 취소되었습니다. 주문ID: {}", orderId);
         return new OrderCancelResponseDto(order.getId(), order.getTotalAmount());
+    }
+
+    /**
+     * 특정 매장의 주문 목록을 최신순으로 조회합니다.
+     */
+    public List<OrderDetailResponseDto> getOrdersByStoreId(Long storeId) {
+        List<Order> orders = orderRepository.findByStoreIdOrderByCreatedAtDesc(storeId);
+
+        return orders.stream()
+                .map(this::mapToOrderDetailResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 매장 접근 권한을 검증합니다.
+     */
+    public void validateStoreAccess(Long storeId, String managedStoreIds) {
+        List<Long> accessibleStoreIds = Arrays.stream(managedStoreIds.split(","))
+                .map(Long::parseLong)
+                .toList();
+
+        if (!accessibleStoreIds.contains(storeId)) {
+            throw new CustomException(ErrorCode.STORE_ACCESS_DENIED);
+        }
     }
 
     // ==================== Private Helper Methods ====================
