@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/order")
 @Tag(name = "Order", description = "주문 관련 API")
@@ -37,6 +39,21 @@ public class OrderController {
     @Operation(summary = "주문 취소", description = "주문 ID로 주문을 취소합니다.")
     public ApiResponse<OrderCancelResponseDto> cancelOrder(@PathVariable String orderId) {
         OrderCancelResponseDto response = orderService.cancelOrder(orderId);
+        return ApiResponse.success(response);
+    }
+
+    @GetMapping("/orders/{storeId}")
+    @Operation(summary = "매장별 주문 목록 조회", description = "특정 매장의 전체 주문 목록을 조회합니다.")
+    public ApiResponse<List<OrderDetailResponseDto>> getOrders(
+            @PathVariable Long storeId,
+            @RequestHeader("X-MANAGED-STORE-IDS") String managedStoreIds) {
+
+        // 매장 권한 검증
+        orderService.validateStoreAccess(storeId, managedStoreIds);
+
+        // 매장별 주문 목록 조회
+        List<OrderDetailResponseDto> response = orderService.getOrdersByStoreId(storeId);
+
         return ApiResponse.success(response);
     }
 }
