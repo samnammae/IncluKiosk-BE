@@ -136,7 +136,8 @@ services:
       - "8084:8084"
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_DATA_MONGODB_URI=mongodb://${ORDER_MONGO_USERNAME}:${ORDER_MONGO_PASSWORD}@mongodb-order:27017/${ORDER_MONGO_DATABASE}?authSource=admin
+      - MONGO_URI=mongodb://${ORDER_MONGO_USERNAME}:${ORDER_MONGO_PASSWORD}@mongodb-order:27017/${ORDER_MONGO_DATABASE}?authSource=admin
+      - MONGO_DATABASE=${ORDER_MONGO_DATABASE}
     depends_on:
       - eureka-server
       - mongodb-order
@@ -194,7 +195,8 @@ services:
       - "8085:8085"
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-      - SPRING_DATA_MONGODB_URI=mongodb://${CHATBOT_MONGO_USERNAME}:${CHATBOT_MONGO_PASSWORD}@mongodb-chatbot:27017/${CHATBOT_MONGO_DATABASE}?authSource=admin
+      - MONGO_URI=mongodb://${CHATBOT_MONGO_USERNAME}:${CHATBOT_MONGO_PASSWORD}@mongodb-chatbot:27017/${CHATBOT_MONGO_DATABASE}?authSource=admin
+      - MONGO_DATABASE=${CHATBOT_MONGO_DATABASE}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - eureka-server
