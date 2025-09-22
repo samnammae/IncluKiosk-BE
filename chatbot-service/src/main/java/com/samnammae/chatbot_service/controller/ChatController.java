@@ -10,14 +10,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/chat")
+@RequestMapping("/api/chatbot")
 @Tag(name = "Chatbot", description = "챗봇 관련 API")
 @RequiredArgsConstructor
 public class ChatController {
 
     private final ChatService chatService;
 
-    @PostMapping("/api/chatbot/{storeId}/chat")
+    @PostMapping("/{storeId}")
     public ApiResponse<ChatResponse> handleChat(
             @PathVariable Long storeId,
             @RequestBody ChatRequest request,
@@ -26,7 +26,7 @@ public class ChatController {
         //  매장 권한 검증
         chatService.validateStoreAccess(storeId, managedStoreIds);
 
-        ChatResponse response = chatService.processChat(request.getSessionId(), request.getMessage());
+        ChatResponse response = chatService.processChat(storeId, request.getSessionId(), request.getMessage(), managedStoreIds);
 
         return ApiResponse.success(response);
     }
