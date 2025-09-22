@@ -60,6 +60,20 @@ services:
     networks:
       - my-msa-network
 
+  # 1.5. Chatbot Service용 MongoDB
+  mongodb-chatbot:
+    image: mongo:latest
+    ports:
+      - "27018:27017" # 포트 충돌 방지를 위해 호스트 포트를 27018로 변경
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${CHATBOT_MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${CHATBOT_MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${CHATBOT_MONGO_DATABASE}
+    volumes:
+      - mongodb-data-chatbot:/data/db
+    networks:
+      - my-msa-network
+
   # --- 2. 코어 MSA 인프라 서비스 ---
 
   # 2.1. 유레카 서버 (Service Discovery)
@@ -172,30 +186,31 @@ services:
       - my-msa-network
 
   # 3.5. Chatbot Service (클라이언트 챗봇)
-#  chatbot-service:
-#    build:
-#      context: ./chatbot-service
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8085:8085" # Chatbot Service 포트 (다른 서비스와 중복되지 않게)
-#    environment:
-#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
-#      # 챗봇 서비스가 다른 서비스의 API를 호출해야 한다면 여기에 추가 설정이 필요할 수 있습니다.
-#      # 예: MENU_SERVICE_URL=http://menu-service:8084/api/menu
-#    depends_on:
-#      - eureka-server
-#      # 챗봇 서비스가 메뉴, 매장 정보 등을 조회하므로 해당 서비스들에 대한 의존성도 고려할 수 있음
-#      # - menu-service
-#      # - admin-service
-#    networks:
-#      - my-msa-network
+  chatbot-service:
+    build:
+      context: ./chatbot-service
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      - SPRING_DATA_MONGODB_URI=mongodb://${CHATBOT_MONGO_USERNAME}:${CHATBOT_MONGO_PASSWORD}@mongodb-chatbot:27017/${CHATBOT_MONGO_DATABASE}?authSource=admin
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - eureka-server
+      - mongodb-chatbot # 자신의 데이터베이스에 의존
+      - menu-service    # RAG를 위해 메뉴 서비스가 먼저 실행되어야 함
+      - order-service   # 주문을 위해 오더 서비스가 먼저 실행되어야 함
+    networks:
+      - my-msa-network
 
 # --- 4. 데이터 영속성을 위한 볼륨 정의 ---
 volumes:
   mysql-data-auth:
   mysql-data-admin:
   mysql-data-menu:
-  mongodb-data-order: # MongoDB용 볼륨 추가
+  mongodb-data-order:
+  mongodb-data-chatbot:
 
 # --- 5. 모든 서비스가 통신할 수 있는 사용자 정의 네트워크 ---
 networks:
