@@ -43,6 +43,14 @@ spring:
                 - Path=/api/order/**
               filters:
                 - AuthorizationHeader
+
+            # Chatbot 서비스 라우팅 규칙
+            - id: chatbot-service-route
+              uri: lb://chatbot-service # 로드 밸런싱을 통해 chatbot-service
+              predicates:
+                - Path=/api/chatbot/**
+              filters:
+                  - AuthorizationHeader
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
           globalcors:
