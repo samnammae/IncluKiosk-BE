@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
         configuration = GeminiClientConfig.class)
 public interface GeminiClient {
 
-    @PostMapping(value = "/v1beta/models/gemini-1.5-flash-latest:generateContent",
+    @PostMapping(value = "/v1beta/models/gemini-2.0-flash-lite:generateContent",
             headers = {"Content-Type=application/json"})
     GeminiResponse call(@RequestBody GeminiRequest request);
 }
