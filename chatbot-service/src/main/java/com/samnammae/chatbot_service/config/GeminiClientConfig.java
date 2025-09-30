@@ -11,6 +11,6 @@ public class GeminiClientConfig {
 
     @Bean
     public RequestInterceptor requestInterceptor() {
-        return requestTemplate -> requestTemplate.query("key", apiKey);
+        return requestTemplate -> requestTemplate.header("x-goog-api-key", apiKey);
     }
 }
