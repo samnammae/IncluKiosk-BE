@@ -126,15 +126,23 @@ public class GeminiPromptService {
                         sb.append(" [품절]");
                     }
 
-                    // 옵션 카테고리 정보 추가
+                    // 옵션 카테고리 정보 추가 (중복 제거 로직 포함)
                     if (item.getOptionCategories() != null && !item.getOptionCategories().isEmpty()) {
                         sb.append("\n  옵션:");
                         for (MenuWithOptionsResponseDto.OptionCategory optCat : item.getOptionCategories()) {
                             sb.append("\n    - ").append(optCat.getName())
                                     .append(optCat.isRequired() ? " [필수]" : " [선택]");
+
+                            // 중복 제거를 위해 Set 사용
+                            java.util.Set<String> uniqueOptions = new java.util.LinkedHashSet<>();
                             for (MenuWithOptionsResponseDto.Option option : optCat.getOptions()) {
-                                sb.append("\n      * ").append(option.getName())
-                                        .append(" (+").append(option.getPrice()).append("원)");
+                                String optionText = option.getName() + " (+" + option.getPrice() + "원)";
+                                uniqueOptions.add(optionText);
+                            }
+
+                            // 중복 제거된 옵션들 출력
+                            for (String optionText : uniqueOptions) {
+                                sb.append("\n      * ").append(optionText);
                             }
                         }
                     }
