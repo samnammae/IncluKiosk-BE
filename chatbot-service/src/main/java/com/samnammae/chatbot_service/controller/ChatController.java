@@ -26,7 +26,7 @@ public class ChatController {
         //  매장 권한 검증
         chatService.validateStoreAccess(storeId, managedStoreIds);
 
-        ChatResponse response = chatService.processChat(storeId, request.getSessionId(), request.getMessage(), managedStoreIds);
+        ChatResponse response = chatService.processChat(storeId, request.getSessionId(), request.getMessage(), managedStoreIds, request.getStoreName());
 
         return ApiResponse.success(response);
     }
