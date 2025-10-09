@@ -19,7 +19,7 @@ public class InternalController {
 
     private final InternalService internalService;
 
-    @GetMapping("/{storeId}/kiosk")
+    @GetMapping("/{storeId}")
     @Operation(summary = "키오스크용 메뉴 조회", description = "LLM 처리를 위한 옵션 상세 정보가 포함된 전체 메뉴를 조회합니다.")
     public ApiResponse<MenuWithOptionsResponseDto> getMenusWithOptions(
             @PathVariable Long storeId) {
