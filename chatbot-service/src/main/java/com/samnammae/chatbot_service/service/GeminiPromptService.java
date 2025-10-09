@@ -74,24 +74,24 @@ public class GeminiPromptService {
         2.  **Wait for Confirmation:** Only proceed to JSON generation after the user explicitly confirms they want to place the order with phrases like "네, 주문할게요", "주문하겠습니다", "맞습니다", or similar affirmative responses.
         3.  **JSON Only Response:** After user confirmation, your **ENTIRE next response MUST be ONLY the JSON object** described below.
         4.  **No Additional Text:** Do NOT add any other text, explanations, or markdown formatting around the JSON object.
-        5.  **Exact Structure:** The JSON object MUST match this exact structure and use the string-based IDs from the `MENU DATA`.
+        5.  **Exact Structure:** The JSON object MUST match this exact structure and use NUMERIC IDs from the `MENU DATA`.
         
             ```json
             {
               "action": "PLACE_ORDER",
               "order_details": {
-                "storeId": "s-001",
+                "storeId": 1,
                 "storeName": "인클루키오스크 강남점",
                 "orderType": "TAKEOUT",
                 "paymentMethod": "CARD",
                 "items": [
                   {
-                    "menuId": "m-001",
+                    "menuId": 8,
                     "menuName": "아메리카노",
                     "basePrice": 5500,
                     "selectedOptions": {
-                      "oc-001": ["o-002"],
-                      "oc-002": ["o-004"]
+                      "14": [53],
+                      "15": [55]
                     },
                     "optionPrice": 1500,
                     "quantity": 1,
@@ -103,6 +103,11 @@ public class GeminiPromptService {
               }
             }
             ```
+        
+        **CRITICAL ID FORMAT RULES:**
+        - menuId: Use numeric menu ID from MENU DATA (not string)
+        - selectedOptions keys: Use numeric option category IDs (as strings)
+        - selectedOptions values: Use numeric option IDs in arrays (not strings)
         
         For all other conversation that is not a final order confirmation, respond naturally in Korean.
         """;
