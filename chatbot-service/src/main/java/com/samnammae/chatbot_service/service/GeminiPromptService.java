@@ -3,7 +3,7 @@ package com.samnammae.chatbot_service.service;
 import com.samnammae.chatbot_service.client.MenuServiceClient;
 import com.samnammae.chatbot_service.domain.conversation.Conversation;
 import com.samnammae.chatbot_service.domain.message.Message;
-import com.samnammae.chatbot_service.dto.response.MenuResponseDto;
+import com.samnammae.chatbot_service.dto.response.MenuWithOptionsResponseDto;
 import com.samnammae.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ public class GeminiPromptService {
         log.info("Creating prompt for storeId: {}", storeId);
 
         String systemPrompt = createSystemPrompt();
-        String menuData = fetchAndFormatMenuData(storeId, managedStoreIds);
+        String menuData = fetchAndFormatMenuData(storeId);
         String history = formatHistory(conversation.getMessages());
 
         StringBuilder promptBuilder = new StringBuilder();
@@ -74,12 +74,12 @@ public class GeminiPromptService {
             """;
     }
 
-    private String fetchAndFormatMenuData(Long storeId, String managedStoreIds) {
+    private String fetchAndFormatMenuData(Long storeId) {
         log.info("Fetching menu data for storeId: {}", storeId);
 
         try {
-            log.debug("Calling menuServiceClient.getMenusByStore with storeId: {}", storeId);
-            ApiResponse<MenuResponseDto> response = menuServiceClient.getMenusByStore(storeId, managedStoreIds);
+            log.debug("Calling menuServiceClient.getMenusWithOptions with storeId: {}", storeId);
+            ApiResponse<MenuWithOptionsResponseDto> response = menuServiceClient.getMenusWithOptions(storeId);
 
             log.info("MenuServiceClient response received. Status: {}, HasData: {}",
                     response != null ? "SUCCESS" : "NULL",
@@ -90,7 +90,7 @@ public class GeminiPromptService {
                 return "메뉴 정보를 불러오는 데 실패했습니다. (응답이 null)";
             }
 
-            MenuResponseDto menuData = response.getData();
+            MenuWithOptionsResponseDto menuData = response.getData();
 
             if (menuData == null) {
                 log.error("MenuServiceClient returned null data in response");
@@ -108,18 +108,37 @@ public class GeminiPromptService {
             StringBuilder sb = new StringBuilder();
             int totalMenuItems = 0;
 
-            for (Map.Entry<String, List<MenuResponseDto.MenuItemDto>> entry : menuData.getMenusByCategory().entrySet()) {
+            for (Map.Entry<String, List<MenuWithOptionsResponseDto.MenuDetail>> entry : menuData.getMenusByCategory().entrySet()) {
                 String category = entry.getKey();
-                List<MenuResponseDto.MenuItemDto> items = entry.getValue();
+                List<MenuWithOptionsResponseDto.MenuDetail> items = entry.getValue();
 
                 log.debug("Processing category: {}, items count: {}", category, items.size());
                 totalMenuItems += items.size();
 
                 sb.append("## ").append(category).append("\n");
-                for (MenuResponseDto.MenuItemDto item : items) {
-                    sb.append("- 이름: ").append(item.getName())
+                for (MenuWithOptionsResponseDto.MenuDetail item : items) {
+                    sb.append("- ID: ").append(item.getId())
+                            .append(", 이름: ").append(item.getName())
                             .append(", 가격: ").append(item.getPrice()).append("원")
-                            .append(", 설명: ").append(item.getDescription()).append("\n");
+                            .append(", 설명: ").append(item.getDescription());
+
+                    if (item.isSoldOut()) {
+                        sb.append(" [품절]");
+                    }
+
+                    // 옵션 카테고리 정보 추가
+                    if (item.getOptionCategories() != null && !item.getOptionCategories().isEmpty()) {
+                        sb.append("\n  옵션:");
+                        for (MenuWithOptionsResponseDto.OptionCategory optCat : item.getOptionCategories()) {
+                            sb.append("\n    - ").append(optCat.getName())
+                                    .append(optCat.isRequired() ? " [필수]" : " [선택]");
+                            for (MenuWithOptionsResponseDto.Option option : optCat.getOptions()) {
+                                sb.append("\n      * ").append(option.getName())
+                                        .append(" (+").append(option.getPrice()).append("원)");
+                            }
+                        }
+                    }
+                    sb.append("\n");
                 }
             }
 
