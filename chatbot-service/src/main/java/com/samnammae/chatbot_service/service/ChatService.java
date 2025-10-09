@@ -47,7 +47,7 @@ public class ChatService {
     }
 
     @Transactional
-    public ChatResponse processChat(Long storeId, String sessionId, String userMessage, String managedStoreIds) {
+    public ChatResponse processChat(Long storeId, String sessionId, String userMessage, String managedStoreIds, String storeName) {
         log.info("Processing chat for storeId: {}, sessionId: {}, userMessage: {}", storeId, sessionId, userMessage);
 
         // 1. 대화 기록 조회 또는 생성
@@ -68,7 +68,7 @@ public class ChatService {
 
         // 5. AI 응답 분석 후 최종 메시지 결정
         String finalAiMessage;
-        Optional<OrderRequestDto> orderRequestOpt = parseOrderAction(aiRawResponse);
+        Optional<OrderRequestDto> orderRequestOpt = parseOrderAction(aiRawResponse, storeId, storeName);
 
         if (orderRequestOpt.isPresent()) {
             log.info("Order action detected, processing order...");
@@ -100,7 +100,7 @@ public class ChatService {
     }
 
     // Gemini가 반환한 텍스트가 주문을 위한 JSON 액션인지 파싱하는 헬퍼 메소드
-    private Optional<OrderRequestDto> parseOrderAction(String textResponse) {
+    private Optional<OrderRequestDto> parseOrderAction(String textResponse, Long storeId, String storeName) {
         log.debug("Parsing order action from response: {}", textResponse);
 
         // markdown 코드 블록 제거
@@ -117,7 +117,13 @@ public class ChatService {
 
             if ("PLACE_ORDER".equals(actionDto.getAction()) && actionDto.getOrder_details() != null) {
                 log.info("Valid order action found");
-                return Optional.of(actionDto.getOrder_details());
+                OrderRequestDto orderRequest = actionDto.getOrder_details();
+
+                // 요청에서 받은 매장 정보 주입
+                orderRequest.setStoreId(storeId);
+                orderRequest.setStoreName(storeName);
+
+                return Optional.of(orderRequest);
             } else {
                 log.debug("Not a valid order action: action={}", actionDto.getAction());
             }
