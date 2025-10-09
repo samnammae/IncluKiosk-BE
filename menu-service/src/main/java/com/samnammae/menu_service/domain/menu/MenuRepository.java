@@ -25,4 +25,12 @@ public interface MenuRepository extends JpaRepository<Menu, Long> {
             "LEFT JOIN FETCH oc.options " +
             "WHERE m.id = :menuId")
     Optional<Menu> findByIdWithDetails(@Param("menuId") Long menuId);
+
+    @Query("SELECT m FROM Menu m " +
+            "LEFT JOIN FETCH m.menuCategory mc " +
+            "LEFT JOIN FETCH m.optionCategories oc " +
+            "LEFT JOIN FETCH oc.options " +
+            "WHERE m.storeId = :storeId " +
+            "ORDER BY mc.displayOrder, m.id")
+    List<Menu> findAllByStoreIdWithOptionCategories(@Param("storeId") Long storeId);
 }
