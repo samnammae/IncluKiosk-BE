@@ -126,23 +126,25 @@ public class GeminiPromptService {
                         sb.append(" [품절]");
                     }
 
-                    // 옵션 카테고리 정보 추가 (중복 제거 로직 포함)
+                    // 옵션 카테고리 정보 추가 (ID 포함)
                     if (item.getOptionCategories() != null && !item.getOptionCategories().isEmpty()) {
-                        sb.append("\n  옵션:");
+                        sb.append("\n  옵션 카테고리:");
                         for (MenuWithOptionsResponseDto.OptionCategory optCat : item.getOptionCategories()) {
-                            sb.append("\n    - ").append(optCat.getName())
+                            sb.append("\n    - ID: ").append(optCat.getId())
+                                    .append(", 이름: ").append(optCat.getName())
                                     .append(optCat.isRequired() ? " [필수]" : " [선택]");
 
-                            // 중복 제거를 위해 Set 사용
-                            java.util.Set<String> uniqueOptions = new java.util.LinkedHashSet<>();
+                            // 중복 제거를 위해 Map 사용 (ID를 키로 사용)
+                            java.util.Map<Long, MenuWithOptionsResponseDto.Option> uniqueOptions = new java.util.LinkedHashMap<>();
                             for (MenuWithOptionsResponseDto.Option option : optCat.getOptions()) {
-                                String optionText = option.getName() + " (+" + option.getPrice() + "원)";
-                                uniqueOptions.add(optionText);
+                                uniqueOptions.put(option.getId(), option);
                             }
 
-                            // 중복 제거된 옵션들 출력
-                            for (String optionText : uniqueOptions) {
-                                sb.append("\n      * ").append(optionText);
+                            // 중복 제거된 옵션들 출력 (ID 포함)
+                            for (MenuWithOptionsResponseDto.Option option : uniqueOptions.values()) {
+                                sb.append("\n      * ID: ").append(option.getId())
+                                        .append(", 이름: ").append(option.getName())
+                                        .append(" (+").append(option.getPrice()).append("원)");
                             }
                         }
                     }
