@@ -22,7 +22,12 @@ public class WebConfig implements WebMvcConfigurer {
                         "http://inclukiosk.com",
                         "https://inclukiosk.com",
                         "http://www.inclukiosk.com",
-                        "https://www.inclukiosk.com"
+                        "https://www.inclukiosk.com",
+                        "http://43.201.112.13:3000",
+                        "http://ec2-43-201-112-13.ap-northeast-2.compute.amazonaws.com",
+                        " http://ec2-43-201-112-13.ap-northeast-2.compute.amazonaws.com:3000",
+                        "https://dxt8mqr07jxb9.cloudfront.net",
+                        "https://dxt8mqr07jxb9.cloudfront.net:3000"
                 ) // 허용할 프론트 주소
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
