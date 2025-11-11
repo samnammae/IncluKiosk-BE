@@ -1,5 +1,5 @@
 # Java 17 이미지 기반 (원하는 버전에 맞게 조정 가능)
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jre-alpine
 
 # JAR 파일 복사
 ARG JAR_FILE=build/libs/*.jar
