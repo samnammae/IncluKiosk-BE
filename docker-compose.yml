@@ -218,3 +218,8 @@ volumes:
 networks:
   my-msa-network:
     driver: bridge
+
+
+
+
+# 깃허브 액션 테스트를 위한 주석
