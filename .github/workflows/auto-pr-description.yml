@@ -20,9 +20,14 @@ jobs:
       - name: Get Git Diff
         id: get_diff
         run: |
-          # 변경 사항 추출 (최대 4000자 제한으로 API 안정성 확보)
+          # diff 결과를 파일로 저장
           git diff origin/${{ github.base_ref }}...HEAD > diff.txt
-          echo "DIFF_CONTENT=$(cat diff.txt | head -c 4000)" >> $GITHUB_ENV
+          
+          # 환경 변수에 멀티라인 데이터를 안전하게 저장하는 방식
+          echo "DIFF_CONTENT<<EOF" >> $GITHUB_ENV
+          cat diff.txt | head -c 4000 >> $GITHUB_ENV
+          echo "" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
 
       - name: Call Gemini API
         id: gemini
