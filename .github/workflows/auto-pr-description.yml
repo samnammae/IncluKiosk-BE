@@ -25,7 +25,7 @@ jobs:
           script: |
             const { execSync } = require('child_process');
 
-            // 1. git diff 추출 (최대 4000자 제한 및 이스케이프 처리)
+            // 1. git diff 추출 (최대 4000자 제한)
             let diff = "";
             try {
               diff = execSync('git diff origin/${{ github.base_ref }}...HEAD | head -c 4000').toString();
@@ -34,56 +34,50 @@ jobs:
               diff = "diff를 추출할 수 없습니다.";
             }
 
-            // 2. Gemini API 호출
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{
-                  parts: [{
-                    text: `너는 시니어 소프트웨어 엔지니어다. 다음 git diff 변경 사항을 분석하여 PR 요약문을 한국어로 작성해라. 
-                    형식은 '변경 목적'과 '핵심 변경 사항'을 포함해야 한다.
-                    
-                    변경 사항:
-                    ${diff}`
-                  }]
-                }],
-                // 안전 설정 완화: 코드 분석 중 오탐지로 인한 차단 방지
-                safetySettings: [
-                  { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                  { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-                ],
-                generationConfig: {
-                  maxOutputTokens: 1000,
-                  temperature: 0.7
-                }
-              })
-            });
+            // 2. Gemini API 호출 (공식 문서 규격 반영)
+            const model = "gemini-3-flash-preview";
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
-            const data = await response.json();
-            
-            // 3. 응답 데이터 분석 및 에러 핸들링
-            let summary = "";
-            if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
-              summary = data.candidates[0].content.parts[0].text;
-            } else {
-              console.log("Full API Response:", JSON.stringify(data));
-              if (data.error) {
-                summary = `⚠️ API 에러: ${data.error.message}`;
-              } else if (data.promptFeedback && data.promptFeedback.blockReason) {
-                summary = `🚫 콘텐츠가 차단되었습니다. (사유: ${data.promptFeedback.blockReason})`;
+            try {
+              const response = await fetch(url, {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'x-goog-api-key': process.env.GEMINI_API_KEY
+                },
+                body: JSON.stringify({
+                  contents: [{
+                    parts: [{
+                      text: `너는 시니어 소프트웨어 엔지니어다. 다음 git diff 변경 사항을 분석하여 PR 요약문을 한국어로 작성해라. 형식은 '변경 목적'과 '핵심 변경 사항'을 포함해야 한다.\n\n${diff}`
+                    }]
+                  }],
+                  generationConfig: {
+                    maxOutputTokens: 1000,
+                    temperature: 0.7
+                  }
+                })
+              });
+
+              const data = await response.json();
+              
+              // 3. 응답 데이터 처리 및 요약 추출
+              let summary = "";
+              if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
+                summary = data.candidates[0].content.parts[0].text;
               } else {
-                summary = "🤖 Gemini가 요약 생성에 실패했습니다. 상세 로그를 확인하세요.";
+                console.log("API Error Response:", JSON.stringify(data));
+                summary = data.error ? `⚠️ API 에러: ${data.error.message}` : "🤖 요약 생성에 실패했습니다. (API 응답 구조 확인 필요)";
               }
-            }
 
-            // 4. PR 본문 업데이트
-            const footer = "\n\n----- \n> ✨ **Gemini**에 의해 자동 생성된 요약입니다. 필요에 따라 수정하세요!";
-            await github.rest.pulls.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-              body: summary + footer
-            });
+              // 4. PR 본문 업데이트
+              const footer = "\n\n----- \n> ✨ **Gemini 3 Flash**에 의해 자동 생성된 요약입니다. 필요에 따라 수정하세요!";
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+                body: summary + footer
+              });
+
+            } catch (error) {
+              console.log("Network or Script Error:", error);
+            }
