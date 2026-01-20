@@ -25,52 +25,86 @@ jobs:
           script: |
             const { execSync } = require('child_process');
 
-            // 1. git diff 추출 (최대 4000자 제한)
+            // 1. 데이터 추출
             let diff = "";
+            let commits = "";
+            let diffStat = "";
+
             try {
-              diff = execSync('git diff origin/${{ github.base_ref }}...HEAD | head -c 4000').toString();
+              const baseRef = 'origin/${{ github.base_ref }}';
+              diff = execSync(`git diff ${baseRef}...HEAD | head -c 50000`).toString();
+              diffStat = execSync(`git diff --stat ${baseRef}...HEAD`).toString();
+              commits = execSync(`git log ${baseRef}...HEAD --pretty=format:"- %s"`).toString();
             } catch (e) {
-              console.log("Diff extraction failed:", e);
-              diff = "diff를 추출할 수 없습니다.";
+              console.error("Git 데이터 추출 중 에러 발생:", e);
+              diff = "데이터 추출 실패";
             }
 
-            // 2. Gemini API 호출 (공식 문서 규격 반영)
-            const model = "gemini-3-flash-preview";
+            // 2. PR 템플릿 정의
+            const PR_TEMPLATE = `
+            ## #️⃣ 변경 사항
+            > 이 PR에서 변경된 내용을 간결하게 설명해주세요.
+
+            ## #️⃣ 관련 이슈
+            - Closes #
+            - Related to #
+
+            ## #️⃣ 작업 상세 내용
+            - 
+
+            ## 📸 스크린샷 (선택)
+            ### 변경 전
+            ### 변경 후
+            
+            ## 📎 참고할만한 자료 (선택)
+            `;
+
+            // 3. Gemini API 호출
+            const model = "gemini-1.5-flash";
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
             try {
               const response = await fetch(url, {
                 method: 'POST',
-                headers: { 
+                headers: {
                   'Content-Type': 'application/json',
                   'x-goog-api-key': process.env.GEMINI_API_KEY
                 },
                 body: JSON.stringify({
                   contents: [{
                     parts: [{
-                      text: `너는 시니어 소프트웨어 엔지니어다. 다음 git diff 변경 사항을 분석하여 PR 요약문을 한국어로 작성해라. 형식은 '변경 목적'과 '핵심 변경 사항'을 포함해야 한다.\n\n${diff}`
+                      text: `너는 유능한 소프트웨어 엔지니어다. 아래 제공된 커밋 내역과 코드 변경 사항을 분석하여 주어진 'PR 템플릿 형식'에 맞춰 PR 본문을 작성해라. 한국어로 작성하고, 기술적인 용어는 정확하게 사용해라. 
+
+                      [PR 템플릿 형식]
+                      ${PR_TEMPLATE}
+
+                      [커밋 메시지 목록]
+                      ${commits}
+
+                      [변경 파일 요약]
+                      ${diffStat}
+
+                      [상세 코드 변경 내용]
+                      ${diff}`
                     }]
-                  }],
-                  generationConfig: {
-                    maxOutputTokens: 1000,
-                    temperature: 0.7
-                  }
+                  }]
                 })
               });
 
               const data = await response.json();
+              if (data.error) throw new Error(data.error.message);
               
-              // 3. 응답 데이터 처리 및 요약 추출
-              let summary = "";
-              if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
-                summary = data.candidates[0].content.parts[0].text;
-              } else {
-                console.log("API Error Response:", JSON.stringify(data));
-                summary = data.error ? `⚠️ API 에러: ${data.error.message}` : "🤖 요약 생성에 실패했습니다. (API 응답 구조 확인 필요)";
-              }
+              const summary = data.candidates?.[0]?.content?.parts?.[0]?.text || "요약 생성 실패";
 
               // 4. PR 본문 업데이트
-              const footer = "\n\n----- \n> ✨ **Gemini 3 Flash**에 의해 자동 생성된 요약입니다. 필요에 따라 수정하세요!";
+              const footer = "\n\n---\n> **AI 자동 생성 결과** (내용 확인 후 삭제 및 수정하여 사용하세요)\n\n" +
+                "```\n" +
+                "✅ 체크리스트\n" +
+                "- 코드가 프로젝트의 코딩 컨벤션을 따릅니다\n" +
+                "- 문서를 업데이트했습니다 (필요한 경우)\n" +
+                "- 관련 이슈를 연결했습니다\n" +
+                "```";
+
               await github.rest.pulls.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -79,5 +113,5 @@ jobs:
               });
 
             } catch (error) {
-              console.log("Network or Script Error:", error);
+              console.error("Error during Gemini API call or PR update:", error);
             }
